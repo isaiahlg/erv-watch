@@ -1,4 +1,5 @@
 import {useState} from 'react';
+// import {Map, NavigationControl} from 'react-map-gl';
 import {Map} from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
 import DeckGL from '@deck.gl/react';
@@ -40,6 +41,12 @@ const INITIAL_VIEW_STATE = {
 };
 
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
+
+// const NAV_CONTROL_STYLE = {
+//   position: 'absolute',
+//   top: 10,
+//   left: 10
+// };
 
 const ambientLight = new AmbientLight({
   color: [255, 255, 255],
@@ -116,6 +123,7 @@ export default function App({data = DATA_URL, mapStyle = MAP_STYLE}) {
       getTooltip={getTooltip}
     >
       <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true} />
+      {/* <NavigationControl /> */}
     </DeckGL>
   );
 }
