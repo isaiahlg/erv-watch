@@ -1,23 +1,25 @@
-import {useState} from 'react';
+// import {useState} from 'react';
 // import {Map, NavigationControl} from 'react-map-gl';
 import {Map} from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
 import DeckGL from '@deck.gl/react';
 import {GeoJsonLayer} from '@deck.gl/layers';
-import {LightingEffect, AmbientLight, _SunLight as SunLight} from '@deck.gl/core';
+// import {LightingEffect, AmbientLight, _SunLight as SunLight} from '@deck.gl/core';
 
 
 // Source data GeoJSON
-const DATA_URL =
-  'https://raw.githubusercontent.com/isaiahlg/dssVis/main/data/geojson/busses.json'; // eslint-disable-line
+const BUSES_URL =
+  'https://raw.githubusercontent.com/isaiahlg/vite-vis-dss/main/data/geojson/buses2.json?token=GHSAT0AAAAAACGEBKG4B4NA3DOZDOFLI3VKZICG5NA'; // eslint-disable-line
 
+const LINES_URL = 
+  'https://raw.githubusercontent.com/isaiahlg/vite-vis-dss/main/data/geojson/lines2.json?token=GHSAT0AAAAAACGEBKG5P2SE2DO4PV2VWST2ZICHXZQ'
 
 const INITIAL_VIEW_STATE = {
-  latitude: 37.8044,
-  longitude: -122.2712,
-  zoom: 13,
+  latitude: 37.78,
+  longitude: -122.212,
+  zoom: 14,
   maxZoom: 16,
-  pitch: 45,
+  pitch: 60,
   bearing: 0
 };
 
@@ -29,75 +31,46 @@ const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.j
 //   left: 10
 // };
 
-// todo: find out what this does
-const ambientLight = new AmbientLight({
-  color: [255, 255, 255],
-  intensity: 1.0
-});
-
-// todo: find out what this does
-const dirLight = new SunLight({
-  timestamp: Date.UTC(2019, 7, 1, 22),
-  color: [255, 255, 255],
-  intensity: 1.0,
-  _shadow: true
-});
-
-// todo: change this tool tip
-function getTooltip({object}) {
-  return (
-    object && {
-      html: `\
-  <div><b>Average Property Value</b></div>
-  <div>${object.properties.valuePerParcel} / parcel</div>
-  <div>${object.properties.valuePerSqm} / m<sup>2</sup></div>
-  <div><b>Growth</b></div>
-  <div>${Math.round(object.properties.growth * 100)}%</div>
-  `
-    }
-  );
-}
-
-export default function App({data = DATA_URL, mapStyle = MAP_STYLE}) {
-  const [effects] = useState(() => {
-    const lightingEffect = new LightingEffect({ambientLight, dirLight});
-    lightingEffect.shadowColor = [0, 0, 0, 0.5];
-    return [lightingEffect];
-  });
-
+export default function App({buses = BUSES_URL, lines = LINES_URL, mapStyle = MAP_STYLE}) {
   const layers = [
-    // only needed when using shadows - a plane for shadows to drop on
-    // new PolygonLayer({
-    //   id: 'ground',
-    //   data: landCover,
-    //   stroked: false,
-    //   getPolygon: f => f,
-    //   getFillColor: [0, 0, 0, 0]
-    // }),
     new GeoJsonLayer({
-      id: 'geojson',
-      data,
+      id: 'geojson1',
+      data: buses,
       opacity: 0.8,
-      stroked: false,
+      // stroked: true,
       filled: true,
-      extruded: true,
-      wireframe: true,
-      getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
+      // extruded: false,
+      // wireframe: true,
+      getPointRadius: 5,
+      getFillColor: [60, 120, 255],
+      // getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
       // getFillColor: f => COLOR_SCALE(f.properties.growth),
-      getLineColor: [255, 255, 255],
-      pickable: true
+      getLineColor: [60, 120, 255],
+      // pickable: true
+    }),
+    new GeoJsonLayer({
+      id: 'geojson2',
+      data: lines,
+      opacity: 0.8,
+      // stroked: true,
+      filled: true,
+      // extruded: false,
+      // wireframe: true,
+      // getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
+      // getFillColor: f => COLOR_SCALE(f.properties.growth),
+      getLineColor: [255, 120, 0],
+      getLineWidth: 2,
+      // pickable: true
     })
   ];
-
-  console.log(data)
 
   return (
     <DeckGL
       layers={layers}
-      effects={effects}
+      // effects={effects}
       initialViewState={INITIAL_VIEW_STATE}
       controller={true}
-      getTooltip={getTooltip}
+      // getTooltip={getTooltip}
     >
       <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true} />
       {/* <NavigationControl /> */}

@@ -12,10 +12,11 @@
   "dependencies": {
     "d3-scale": "^4.0.2",
     "deck.gl": "^8.9.27",
+    "mapbox-gl": "^2.15.0",
     "maplibre-gl": "^3.3.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-map-gl": "^7.1.5"
+    "react-map-gl": "^7.1.6"
   },
   "devDependencies": {
     "@types/react": "^18.2.15",
