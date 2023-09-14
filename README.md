@@ -1,5 +1,9 @@
 # Vis DSS with Vite, React, and Deck.gl
 
+This is an app for visualizing OpenDSS data using Vite, React, and Deck.gl. It's based on the template for vite.js + React, and the GeoJsonLayer example from deck.gl. 
+
+<!-- insert an image from public called screenshot.png -->
+![Screenshot](public/screenshot.png)
 ## Deck.gl
 This is a minimal standalone version of the GeoJsonLayer (Polygons) example
 on [deck.gl](http://deck.gl) website.
