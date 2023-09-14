@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "d3-scale": "^4.0.2",
+    "d3-scale-chromatic": "^3.0.0",
     "deck.gl": "^8.9.27",
     "mapbox-gl": "^2.15.0",
     "maplibre-gl": "^3.3.1",

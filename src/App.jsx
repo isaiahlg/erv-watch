@@ -1,79 +1,62 @@
-// import {useState} from 'react';
-// import {Map, NavigationControl} from 'react-map-gl';
-import {Map} from 'react-map-gl';
+import Map from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
 import DeckGL from '@deck.gl/react';
 import {GeoJsonLayer} from '@deck.gl/layers';
-// import {LightingEffect, AmbientLight, _SunLight as SunLight} from '@deck.gl/core';
+import {interpolateRdBu} from 'd3-scale-chromatic';
 
+// Source data 
+const BUSES_URL = '/data/geojson/buses2nozero.json';
+const LINES_URL = '/data/geojson/lines2.json'
 
-// Source data GeoJSON
-const BUSES_URL =
-  'https://raw.githubusercontent.com/isaiahlg/vite-vis-dss/main/data/geojson/buses2.json?token=GHSAT0AAAAAACGEBKG4B4NA3DOZDOFLI3VKZICG5NA'; // eslint-disable-line
-
-const LINES_URL = 
-  'https://raw.githubusercontent.com/isaiahlg/vite-vis-dss/main/data/geojson/lines2.json?token=GHSAT0AAAAAACGEBKG5P2SE2DO4PV2VWST2ZICHXZQ'
-
+// style map
+const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 const INITIAL_VIEW_STATE = {
   latitude: 37.78,
   longitude: -122.212,
-  zoom: 14,
-  maxZoom: 16,
+  zoom: 15,
+  maxZoom: 20,
   pitch: 60,
   bearing: 0
 };
+const toRGBArray = rgbStr => rgbStr.match(/\d+/g).map(Number);
+const COLOR_SCALE = v => toRGBArray(interpolateRdBu(v));
 
-const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+const getTooltip = ({object}) => object && object.properties.name;
 
-// const NAV_CONTROL_STYLE = {
-//   position: 'absolute',
-//   top: 10,
-//   left: 10
-// };
-
+// primary component
 export default function App({buses = BUSES_URL, lines = LINES_URL, mapStyle = MAP_STYLE}) {
   const layers = [
     new GeoJsonLayer({
       id: 'geojson1',
       data: buses,
       opacity: 0.8,
-      // stroked: true,
       filled: true,
-      // extruded: false,
-      // wireframe: true,
-      getPointRadius: 5,
-      getFillColor: [60, 120, 255],
-      // getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
-      // getFillColor: f => COLOR_SCALE(f.properties.growth),
-      getLineColor: [60, 120, 255],
-      // pickable: true
+      pointType: 'circle',
+      pointRadiusMaxPixels: 20,
+      radiusUnits: 'meters',
+      getPointRadius: f => 500 * Math.abs(f.properties.voltage-1),
+      getFillColor: f => COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
+      getLineColor: f => COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
+      pickable: true
     }),
     new GeoJsonLayer({
       id: 'geojson2',
       data: lines,
-      opacity: 0.8,
-      // stroked: true,
-      filled: true,
-      // extruded: false,
-      // wireframe: true,
-      // getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
-      // getFillColor: f => COLOR_SCALE(f.properties.growth),
-      getLineColor: [255, 120, 0],
+      opacity: 0.1,
+      getLineColor: [255, 255, 255],
       getLineWidth: 2,
-      // pickable: true
+      pickable: true
     })
   ];
 
   return (
-    <DeckGL
-      layers={layers}
-      // effects={effects}
-      initialViewState={INITIAL_VIEW_STATE}
-      controller={true}
-      // getTooltip={getTooltip}
-    >
-      <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true} />
-      {/* <NavigationControl /> */}
-    </DeckGL>
+      <DeckGL
+        layers={layers}
+        initialViewState={INITIAL_VIEW_STATE}
+        controller={true}
+        getTooltip={getTooltip}
+      >
+        <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true} />
+      </DeckGL>
   );
 }
