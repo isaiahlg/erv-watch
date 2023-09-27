@@ -5,8 +5,10 @@ import {GeoJsonLayer} from '@deck.gl/layers';
 import {interpolateRdBu} from 'd3-scale-chromatic';
 
 // Source data 
-const BUSES_URL = '/data/geojson/buses2nozero.json';
-const LINES_URL = '/data/geojson/lines2.json'
+// const BUSES_URL = '/src/geojson/buses2nozero.json';
+// const LINES_URL = '/src/geojson/lines2.json';
+const BUSES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/geojson/buses2nozero.json';
+const LINES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/geojson/lines2.json'
 
 // style map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
