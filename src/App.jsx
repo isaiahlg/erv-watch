@@ -2,15 +2,17 @@ import {useState} from 'react';
 import Map from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
 import DeckGL from '@deck.gl/react';
-import {GeoJsonLayer, H3HexagonLayer} from '@deck.gl/layers';
+import {GeoJsonLayer} from '@deck.gl/layers';
+import {H3HexagonLayer} from '@deck.gl/geo-layers';
 import {interpolateRdBu} from 'd3-scale-chromatic';
+import H3_URL from '/data/geojson/h3.json'
 
 // Source data 
 // const BUSES_URL = '/src/geojson/buses2nozero.json';
 // const LINES_URL = '/src/geojson/lines2.json';
 const BUSES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/geojson/buses2nozero.json';
 const LINES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/geojson/lines2.json'
-const H3_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/geojson/h3.json'
+// const H3_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/geojson/h3.json'
 
 // style map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
@@ -32,7 +34,7 @@ export default function App({buses = BUSES_URL, lines = LINES_URL, hexes = H3_UR
   const [viewLines, toggleLines] = useState(true);
   const [viewBuses, toggleBuses] = useState(true);
   const [viewH3, toggleH3] = useState(true);
-  console.log(viewH3)
+  console.log(H3_URL)
 
   const busesLayer = new GeoJsonLayer({
       id: 'geojson1',
@@ -64,11 +66,10 @@ export default function App({buses = BUSES_URL, lines = LINES_URL, hexes = H3_UR
     data: hexes,
     opacity: 0.8,
     filled: true,
-    // extruded: true,
-    // wireframe: true,
+    extruded: false,
     getHexagon: d => d.hex,
-    getFillColor: d => COLOR_SCALE(-20*(d.properties.voltage-1) + 0.5),
-  
+    getFillColor: d => COLOR_SCALE(-20*(d.voltage-1) + 0.5),
+    // get the correct hexes from the new repo, convert to datatype
   })
 
   const buttonStyle = (view, n) => {
@@ -107,7 +108,7 @@ export default function App({buses = BUSES_URL, lines = LINES_URL, hexes = H3_UR
         </button>
         <button 
           onClick = {() => toggleH3(!viewH3)}
-          style = {buttonStyle(viewH3, 1)}> 
+          style = {buttonStyle(viewH3, 2)}> 
           H3 Hexes
         </button>
         <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true} />
