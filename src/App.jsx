@@ -3,16 +3,12 @@ import Map from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
 import DeckGL from '@deck.gl/react';
 import {GeoJsonLayer} from '@deck.gl/layers';
-import {H3HexagonLayer} from '@deck.gl/geo-layers';
+import {H3HexagonLayer, S2Layer} from '@deck.gl/geo-layers';
 import {interpolateRdBu} from 'd3-scale-chromatic';
-import H3_URL from '/data/geojson/h3.json'
-
-// Source data 
-// const BUSES_URL = '/src/geojson/buses2nozero.json';
-// const LINES_URL = '/src/geojson/lines2.json';
-const BUSES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/geojson/buses2nozero.json';
-const LINES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/geojson/lines2.json'
-// const H3_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/geojson/h3.json'
+import LINES_URL from '/data/geojson/lines.json'
+import BUSES_URL from '/data/geojson/busesnozero.json'
+import H3_URL from '/data/geojson/h3r10.json'
+import S2_URL from '/data/geojson/s2r16.json'
 
 // style map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
@@ -30,11 +26,17 @@ const COLOR_SCALE = v => toRGBArray(interpolateRdBu(v));
 const getTooltip = ({object}) => object && object.properties.name;
 
 // primary component
-export default function App({buses = BUSES_URL, lines = LINES_URL, hexes = H3_URL, mapStyle = MAP_STYLE}) {
+export default function App({
+  buses = BUSES_URL, 
+  lines = LINES_URL, 
+  hexes = H3_URL, 
+  s2tiles = S2_URL, 
+  mapStyle = MAP_STYLE
+}) {
   const [viewLines, toggleLines] = useState(true);
   const [viewBuses, toggleBuses] = useState(true);
-  const [viewH3, toggleH3] = useState(true);
-  console.log(H3_URL)
+  const [viewH3, toggleH3] = useState(false);
+  const [viewS2, toggleS2] = useState(false);
 
   const busesLayer = new GeoJsonLayer({
       id: 'geojson1',
@@ -64,12 +66,25 @@ export default function App({buses = BUSES_URL, lines = LINES_URL, hexes = H3_UR
   const h3Layer = new H3HexagonLayer({
     id: 'h3-1',
     data: hexes,
-    opacity: 0.8,
+    opacity: 0.5,
     filled: true,
     extruded: false,
-    getHexagon: d => d.hex,
+    getHexagon: d => d.h3,
     getFillColor: d => COLOR_SCALE(-20*(d.voltage-1) + 0.5),
-    // get the correct hexes from the new repo, convert to datatype
+    getLineColor: d => COLOR_SCALE(-20*(d.voltage-1) + 0.5),
+    visible: viewH3
+  })
+
+  const s2Layer = new S2Layer({
+    id: 's2-1',
+    data: s2tiles,
+    opacity: 0.5,
+    filled: true,
+    extruded: false,
+    getS2Token: d => d.s2,
+    getFillColor: d => COLOR_SCALE(-20*(d.voltage-1) + 0.5),
+    getLineColor: d => COLOR_SCALE(-20*(d.voltage-1) + 0.5),
+    visible: viewS2
   })
 
   const buttonStyle = (view, n) => {
@@ -88,9 +103,10 @@ export default function App({buses = BUSES_URL, lines = LINES_URL, hexes = H3_UR
   return (
       <DeckGL
         layers={[
+          s2Layer,
+          h3Layer,
           busesLayer,
-          linesLayer,
-          h3Layer
+          linesLayer
         ]}
         initialViewState={INITIAL_VIEW_STATE}
         controller={true}
@@ -110,6 +126,11 @@ export default function App({buses = BUSES_URL, lines = LINES_URL, hexes = H3_UR
           onClick = {() => toggleH3(!viewH3)}
           style = {buttonStyle(viewH3, 2)}> 
           H3 Hexes
+        </button>
+        <button 
+          onClick = {() => toggleS2(!viewS2)}
+          style = {buttonStyle(viewS2, 4)}> 
+          S2 Tiles
         </button>
         <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true} />
       </DeckGL>
