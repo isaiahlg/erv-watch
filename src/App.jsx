@@ -5,11 +5,18 @@ import DeckGL from '@deck.gl/react';
 import {GeoJsonLayer} from '@deck.gl/layers';
 import {H3HexagonLayer, S2Layer} from '@deck.gl/geo-layers';
 import {interpolateRdBu} from 'd3-scale-chromatic';
-import LINES_URL from '/data/json/lines.geo.json';
-import BUSES_URL from '/data/json/buses.geo.json';
-import H3_URL from '/data/json/h3r10.json';
-import S2_URL from '/data/json/s2r16.json';
-import VORONOI_URL from '/data/json/voronoi.geo.json';
+// import LINES_URL from '/data/json/lines.geo.json';
+// import BUSES_URL from '/data/json/buses.geo.json';
+// import H3_URL from '/data/json/h3r10.json';
+// import S2_URL from '/data/json/s2r16.json';
+// import VORONOI_URL from '/data/json/voronoi.geo.json';
+
+const LINES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/lines.geo.json';
+const BUSES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/buses.geo.json';
+const H3_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/h3r10.json';
+const S2_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/s2r16geo.json';
+const VORONOI_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/voronoi.geo.json';
+
 
 // style map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
