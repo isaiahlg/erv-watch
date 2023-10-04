@@ -5,10 +5,11 @@ import DeckGL from '@deck.gl/react';
 import {GeoJsonLayer} from '@deck.gl/layers';
 import {H3HexagonLayer, S2Layer} from '@deck.gl/geo-layers';
 import {interpolateRdBu} from 'd3-scale-chromatic';
-import LINES_URL from '/data/geojson/lines.json'
-import BUSES_URL from '/data/geojson/busesnozero.json'
-import H3_URL from '/data/geojson/h3r10.json'
-import S2_URL from '/data/geojson/s2r16.json'
+import LINES_URL from '/data/json/lines.geojson';
+import BUSES_URL from '/data/json/buses.geojson';
+import H3_URL from '/data/json/h3r10.json';
+import S2_URL from '/data/json/s2r16.json';
+import VORONOI_URL from '/data/json/voronoi.geojson';
 
 // style map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
@@ -22,7 +23,6 @@ const INITIAL_VIEW_STATE = {
 };
 const toRGBArray = rgbStr => rgbStr.match(/\d+/g).map(Number);
 const COLOR_SCALE = v => toRGBArray(interpolateRdBu(v));
-
 const getTooltip = ({object}) => object && object.properties.name;
 
 // primary component
@@ -30,16 +30,18 @@ export default function App({
   buses = BUSES_URL, 
   lines = LINES_URL, 
   hexes = H3_URL, 
-  s2tiles = S2_URL, 
+  s2tiles = S2_URL,
+  voronoi = VORONOI_URL,
   mapStyle = MAP_STYLE
 }) {
   const [viewLines, toggleLines] = useState(true);
   const [viewBuses, toggleBuses] = useState(true);
   const [viewH3, toggleH3] = useState(false);
   const [viewS2, toggleS2] = useState(false);
+  const [viewVoronoi, toggleVoronoi] = useState(false);
 
   const busesLayer = new GeoJsonLayer({
-      id: 'geojson1',
+      id: 'buses',
       data: buses,
       opacity: 0.8,
       filled: true,
@@ -54,7 +56,7 @@ export default function App({
     })
   
   const linesLayer = new GeoJsonLayer({
-    id: 'geojson2',
+    id: 'lines',
     data: lines,
     opacity: 0.1,
     getLineColor: [255, 255, 255],
@@ -87,6 +89,21 @@ export default function App({
     visible: viewS2
   })
 
+  const voronoiLayer = new GeoJsonLayer({
+    id: 'voronoi',
+    data: voronoi,
+    opacity: 0.8,
+    filled: true,
+    pointType: 'circle',
+    pointRadiusMaxPixels: 20,
+    radiusUnits: 'meters',
+    getPointRadius: f => 500 * Math.abs(f.properties.voltage-1),
+    getFillColor: f => COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
+    getLineColor: f => COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
+    pickable: true,
+    visible: viewVoronoi
+  })
+
   const buttonStyle = (view, n) => {
     return ({
     position: 'absolute', 
@@ -103,6 +120,7 @@ export default function App({
   return (
       <DeckGL
         layers={[
+          voronoiLayer,
           s2Layer,
           h3Layer,
           busesLayer,
@@ -131,6 +149,11 @@ export default function App({
           onClick = {() => toggleS2(!viewS2)}
           style = {buttonStyle(viewS2, 4)}> 
           S2 Tiles
+        </button>
+        <button 
+          onClick = {() => toggleVoronoi(!viewVoronoi)}
+          style = {buttonStyle(viewVoronoi, 4)}> 
+          Voronoi
         </button>
         <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true} />
       </DeckGL>
