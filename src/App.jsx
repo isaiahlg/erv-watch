@@ -12,7 +12,9 @@ const BUSES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/da
 const H3_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/h3r10.json';
 const S2_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/s2r16.json';
 const VORONOI_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/voronoi.geo.json';
-const CONTOUR_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/contours.json'
+// const CONTOUR_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/buses.geo2.json'
+const CONTOUR_URL = './data/json/buses.geo2.json'
+const CONTOUR_PTS_URL = './data/json/contours.geo.json'
 
 // style map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
@@ -36,6 +38,7 @@ export default function App({
   s2tiles = S2_URL,
   voronoi = VORONOI_URL,
   contours = CONTOUR_URL,
+  contourPts = CONTOUR_PTS_URL,
   mapStyle = MAP_STYLE
 }) {
   const [viewLines, toggleLines] = useState(true);
@@ -45,6 +48,7 @@ export default function App({
   const [viewS2, toggleS2] = useState(false);
   const [viewVoronoi, toggleVoronoi] = useState(false);
   const [viewContours, toggleContours] = useState(false);
+  const [viewContourPts, toggleContourPts] = useState(false);
 
   const lineLayer = new GeoJsonLayer({
     id: 'lines',
@@ -127,14 +131,32 @@ export default function App({
   const contourLayer = new ContourLayer({
     id: 'contours',
     data: contours,
-    cellSize: 100,
-    getPosition: d => [d.longitude, d.latitude],
+    cellSize: 25,
+    getPosition: d => d.geometry.coordinates,
+    getWeight: d => d.properties.voltage,
     contours: [
-      {threshold: [0.0, 0.95], color: [255, 255, 178]},
+      {threshold: [0.0, 0.95], color: [255, 255, 255, 0]},
       {threshold: [0.95, 1], color: [254, 204, 92]},
       {threshold: [1, 1.05], color: [253, 141, 60]},
       {threshold: [1.05, 2], color: [240, 59, 32]}
-    ]
+    ],
+    pickable: false,
+    visible: viewContours
+  })
+
+  const contourPtsLayer = new GeoJsonLayer({
+    id: 'contourPts',
+    data: contourPts,
+    opacity: 0.8,
+    filled: true,
+    pointType: 'circle',
+    pointRadiusMaxPixels: 15,
+    radiusUnits: 'meters',
+    getPointRadius: 10,
+    getFillColor: f => COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
+    getLineColor: f => COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
+    pickable: false,
+    visible: viewContourPts
   })
 
   const buttonStyle = (view, n) => {
@@ -153,6 +175,7 @@ export default function App({
   return (
       <DeckGL
         layers={[
+          contourPtsLayer,
           contourLayer,
           voronoiLayer,
           s2Layer,
@@ -197,8 +220,13 @@ export default function App({
         </button>
         <button 
           onClick = {() => toggleContours(!viewContours)}
-          style = {buttonStyle(viewContours, 6.3)}> 
+          style = {buttonStyle(viewContours, 6.4)}> 
           Contours
+        </button>
+        <button 
+          onClick = {() => toggleContourPts(!viewContourPts)}
+          style = {buttonStyle(viewContourPts, 7.6)}> 
+          ContourPts
         </button>
         <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true} />
       </DeckGL>
