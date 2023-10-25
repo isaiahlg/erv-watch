@@ -4,19 +4,15 @@ import maplibregl from 'maplibre-gl';
 import DeckGL from '@deck.gl/react';
 import {GeoJsonLayer} from '@deck.gl/layers';
 import {H3HexagonLayer, S2Layer} from '@deck.gl/geo-layers';
+import {ContourLayer} from '@deck.gl/aggregation-layers';
 import {interpolateRdBu} from 'd3-scale-chromatic';
-// import LINES_URL from '/data/json/lines.geo.json';
-// import BUSES_URL from '/data/json/buses.geo.json';
-// import H3_URL from '/data/json/h3r10.json';
-// import S2_URL from '/data/json/s2r16.json';
-// import VORONOI_URL from '/data/json/voronoi.geo.json';
 
 const LINES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/lines.geo.json';
 const BUSES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/buses.geo.json';
 const H3_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/h3r10.json';
 const S2_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/s2r16.json';
 const VORONOI_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/voronoi.geo.json';
-
+const CONTOUR_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/contours.json'
 
 // style map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
@@ -39,6 +35,7 @@ export default function App({
   hexes = H3_URL, 
   s2tiles = S2_URL,
   voronoi = VORONOI_URL,
+  contours = CONTOUR_URL,
   mapStyle = MAP_STYLE
 }) {
   const [viewLines, toggleLines] = useState(true);
@@ -47,6 +44,7 @@ export default function App({
   const [viewH3, toggleH3] = useState(false);
   const [viewS2, toggleS2] = useState(false);
   const [viewVoronoi, toggleVoronoi] = useState(false);
+  const [viewContours, toggleContours] = useState(false);
 
   const lineLayer = new GeoJsonLayer({
     id: 'lines',
@@ -95,7 +93,7 @@ export default function App({
     extruded: false,
     getHexagon: d => d.h3,
     getFillColor: d => COLOR_SCALE(-20*(d.voltage-1) + 0.5),
-    getLineColor: d => COLOR_SCALE(-20*(d.voltage-1) + 0.5),
+    getLineWidth: 0,
     visible: viewH3
   })
 
@@ -107,7 +105,7 @@ export default function App({
     extruded: false,
     getS2Token: d => d.s2,
     getFillColor: d => COLOR_SCALE(-20*(d.voltage-1) + 0.5),
-    getLineColor: d => COLOR_SCALE(-20*(d.voltage-1) + 0.5),
+    getLineWidth: 0,
     visible: viewS2
   })
 
@@ -121,9 +119,22 @@ export default function App({
     radiusUnits: 'meters',
     getPointRadius: f => 500 * Math.abs(f.properties.voltage-1),
     getFillColor: f => COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
-    getLineColor: f => COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
+    getLineWidth: 0,
     pickable: true,
     visible: viewVoronoi
+  })
+
+  const contourLayer = new ContourLayer({
+    id: 'contours',
+    data: contours,
+    cellSize: 100,
+    getPosition: d => [d.longitude, d.latitude],
+    contours: [
+      {threshold: [0.0, 0.95], color: [255, 255, 178]},
+      {threshold: [0.95, 1], color: [254, 204, 92]},
+      {threshold: [1, 1.05], color: [253, 141, 60]},
+      {threshold: [1.05, 2], color: [240, 59, 32]}
+    ]
   })
 
   const buttonStyle = (view, n) => {
@@ -142,6 +153,7 @@ export default function App({
   return (
       <DeckGL
         layers={[
+          contourLayer,
           voronoiLayer,
           s2Layer,
           h3Layer,
@@ -182,6 +194,11 @@ export default function App({
           onClick = {() => toggleVoronoi(!viewVoronoi)}
           style = {buttonStyle(viewVoronoi, 5.3)}> 
           Voronoi
+        </button>
+        <button 
+          onClick = {() => toggleContours(!viewContours)}
+          style = {buttonStyle(viewContours, 6.3)}> 
+          Contours
         </button>
         <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true} />
       </DeckGL>
