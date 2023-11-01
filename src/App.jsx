@@ -13,7 +13,6 @@ const H3_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/
 const S2_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/s2r16.json';
 const VORONOI_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/voronoi.geo.json';
 const CONTOUR_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/contours.json'
-const CONTOUR_PTS_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/contours.geo.json'
 
 // style map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
@@ -39,7 +38,6 @@ export default function App({
   s2tiles = S2_URL,
   voronoi = VORONOI_URL,
   contours = CONTOUR_URL,
-  contourPts = CONTOUR_PTS_URL,
   mapStyle = MAP_STYLE
 }) {
   const [viewLines, toggleLines] = useState(true);
@@ -49,7 +47,6 @@ export default function App({
   const [viewS2, toggleS2] = useState(false);
   const [viewVoronoi, toggleVoronoi] = useState(false);
   const [viewContours, toggleContours] = useState(false);
-  const [viewContourPts, toggleContourPts] = useState(false);
 
   const lineLayer = new GeoJsonLayer({
     id: 'lines',
@@ -139,21 +136,6 @@ export default function App({
     visible: viewContours
   })
 
-  const contourPtsLayer = new GeoJsonLayer({
-    id: 'contourPts',
-    data: contourPts,
-    opacity: 1,
-    filled: true, 
-    pointType: 'circle',
-    radiusUnits: 'meters',
-    getPointRadius: 8,
-    getFillColor: f => COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
-    getLineColor: f => COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
-    getLineWidth: 1,
-    pickable: false,
-    visible: viewContourPts
-  })
-
   const buttonStyle = (view, n) => {
     return ({
     position: 'absolute', 
@@ -170,7 +152,6 @@ export default function App({
   return (
       <DeckGL
         layers={[
-          contourPtsLayer,
           contourLayer,
           voronoiLayer,
           s2Layer,
@@ -217,11 +198,6 @@ export default function App({
           onClick = {() => toggleContours(!viewContours)}
           style = {buttonStyle(viewContours, 6.4)}> 
           Contours
-        </button>
-        <button 
-          onClick = {() => toggleContourPts(!viewContourPts)}
-          style = {buttonStyle(viewContourPts, 7.6)}> 
-          ContourPts
         </button>
         <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true} />
       </DeckGL>
