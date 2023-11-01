@@ -4,7 +4,7 @@ import maplibregl from 'maplibre-gl';
 import DeckGL from '@deck.gl/react';
 import {GeoJsonLayer} from '@deck.gl/layers';
 import {H3HexagonLayer, S2Layer} from '@deck.gl/geo-layers';
-import {ContourLayer} from '@deck.gl/aggregation-layers';
+import {GridLayer} from '@deck.gl/aggregation-layers';
 import {interpolateRdBu} from 'd3-scale-chromatic';
 
 const LINES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/lines.geo.json';
@@ -12,9 +12,8 @@ const BUSES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/da
 const H3_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/h3r10.json';
 const S2_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/s2r16.json';
 const VORONOI_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/voronoi.geo.json';
-// const CONTOUR_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/buses.geo2.json'
-const CONTOUR_URL = './data/json/buses.geo2.json'
-const CONTOUR_PTS_URL = './data/json/contours.geo.json'
+const CONTOUR_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/contours.json'
+const CONTOUR_PTS_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/contours.geo.json'
 
 // style map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
@@ -128,18 +127,28 @@ export default function App({
     visible: viewVoronoi
   })
 
-  const contourLayer = new ContourLayer({
+  const contourLayer = new GridLayer({
     id: 'contours',
     data: contours,
-    cellSize: 25,
+    opacity: 0.8,
+    cellSize: 15,
     getPosition: d => d.geometry.coordinates,
-    getWeight: d => d.properties.voltage,
-    contours: [
-      {threshold: [0.0, 0.95], color: [255, 255, 255, 0]},
-      {threshold: [0.95, 1], color: [254, 204, 92]},
-      {threshold: [1, 1.05], color: [253, 141, 60]},
-      {threshold: [1.05, 2], color: [240, 59, 32]}
+    getColorWeight: d => d.properties.voltage,
+    colorDomain: [0.97, 1.03],
+    colorRange: [
+      [5,48,97, 200],
+      [33,102,172, 200],
+      [67,147,195, 200],
+      [146,197,222, 200],
+      [209,229,240, 200],
+      [247,247,247, 200],
+      [253,219,199, 200],
+      [244,165,130, 200],
+      [214,96,77, 200],
+      [178,24,43, 200],
+      [103,0,31, 200]
     ],
+    colorAggregation: 'MEAN',
     pickable: false,
     visible: viewContours
   })
@@ -148,7 +157,7 @@ export default function App({
     id: 'contourPts',
     data: contourPts,
     opacity: 0.8,
-    filled: true,
+    filled: true, 
     pointType: 'circle',
     pointRadiusMaxPixels: 15,
     radiusUnits: 'meters',
