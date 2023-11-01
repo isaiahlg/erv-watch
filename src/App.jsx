@@ -28,6 +28,8 @@ const INITIAL_VIEW_STATE = {
 const toRGBArray = rgbStr => rgbStr.match(/\d+/g).map(Number);
 const COLOR_SCALE = v => toRGBArray(interpolateRdBu(v));
 const getTooltip = ({object}) => object && object.properties.name;
+const range = n => [...Array(n).keys()]
+const RdBuDiscrete = range(102).map(i => COLOR_SCALE(1-i/101));
 
 // primary component
 export default function App({
@@ -79,11 +81,11 @@ export default function App({
       opacity: 0.8,
       filled: true,
       pointType: 'circle',
-      pointRadiusMaxPixels: 20,
+      pointRadiusMaxPixels: 50,
       radiusUnits: 'meters',
-      getPointRadius: f => 500 * Math.abs(f.properties.voltage-1),
+      getPointRadius: f => 400 * Math.abs(f.properties.voltage-1),
       getFillColor: f => COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
-      getLineColor: f => COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
+      getLineWidth: 0,
       pickable: true,
       visible: viewGlyphs
     })
@@ -117,10 +119,6 @@ export default function App({
     data: voronoi,
     opacity: 0.6,
     filled: true,
-    pointType: 'circle',
-    pointRadiusMaxPixels: 20,
-    radiusUnits: 'meters',
-    getPointRadius: f => 500 * Math.abs(f.properties.voltage-1),
     getFillColor: f => COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
     getLineWidth: 0,
     pickable: true,
@@ -131,23 +129,11 @@ export default function App({
     id: 'contours',
     data: contours,
     opacity: 0.8,
-    cellSize: 15,
+    cellSize: 14,
     getPosition: d => d.geometry.coordinates,
     getColorWeight: d => d.properties.voltage,
-    colorDomain: [0.97, 1.03],
-    colorRange: [
-      [5,48,97, 200],
-      [33,102,172, 200],
-      [67,147,195, 200],
-      [146,197,222, 200],
-      [209,229,240, 200],
-      [247,247,247, 200],
-      [253,219,199, 200],
-      [244,165,130, 200],
-      [214,96,77, 200],
-      [178,24,43, 200],
-      [103,0,31, 200]
-    ],
+    colorDomain: [0.975, 1.025],
+    colorRange: RdBuDiscrete,
     colorAggregation: 'MEAN',
     pickable: false,
     visible: viewContours
@@ -156,14 +142,14 @@ export default function App({
   const contourPtsLayer = new GeoJsonLayer({
     id: 'contourPts',
     data: contourPts,
-    opacity: 0.8,
+    opacity: 1,
     filled: true, 
     pointType: 'circle',
-    pointRadiusMaxPixels: 15,
     radiusUnits: 'meters',
-    getPointRadius: 10,
+    getPointRadius: 8,
     getFillColor: f => COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
     getLineColor: f => COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
+    getLineWidth: 1,
     pickable: false,
     visible: viewContourPts
   })
