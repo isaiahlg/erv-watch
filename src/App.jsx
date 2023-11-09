@@ -5,7 +5,7 @@ import DeckGL from '@deck.gl/react';
 import {GeoJsonLayer} from '@deck.gl/layers';
 import {H3HexagonLayer, S2Layer} from '@deck.gl/geo-layers';
 import {GridLayer} from '@deck.gl/aggregation-layers';
-import {interpolateRdBu} from 'd3-scale-chromatic';
+import {interpolateRdBu, interpolateRdPu} from 'd3-scale-chromatic';
 
 const LINES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/lines.geo.json';
 const BUSES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/buses.geo.json';
@@ -26,10 +26,11 @@ const INITIAL_VIEW_STATE = {
   bearing: 0
 };
 const toRGBArray = rgbStr => rgbStr.match(/\d+/g).map(Number);
-const COLOR_SCALE = v => toRGBArray(interpolateRdBu(v));
+const RDBU_COLOR_SCALE = v => toRGBArray(interpolateRdBu(v));
+const RDPU_COLOR_SCALE = v => toRGBArray(interpolateRdPu(v));
 const getTooltip = ({object}) => JSON.stringify(object);
 const range = n => [...Array(n).keys()]
-const RdBuDiscrete = range(102).map(i => COLOR_SCALE(1-i/101));
+const RdBuDiscrete = range(102).map(i => RDBU_COLOR_SCALE(1-i/101));
 
 // primary component
 export default function App({
@@ -50,6 +51,7 @@ export default function App({
   const [viewVoronoi, toggleVoronoi] = useState(false);
   const [viewContours, toggleContours] = useState(false);
   const [viewContourPts, toggleContourPts] = useState(false);
+  const [viewCurrents, toggleCurrents] = useState(false);
 
   const lineLayer = new GeoJsonLayer({
     id: 'lines',
@@ -84,7 +86,7 @@ export default function App({
       pointRadiusMaxPixels: 50,
       radiusUnits: 'meters',
       getPointRadius: f => 400 * Math.abs(f.properties.voltage-1),
-      getFillColor: f => COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
+      getFillColor: f => RDBU_COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
       getLineWidth: 0,
       pickable: true,
       visible: viewGlyphs
@@ -97,7 +99,7 @@ export default function App({
     filled: true,
     extruded: false,
     getHexagon: d => d.h3,
-    getFillColor: d => COLOR_SCALE(-20*(d.voltage-1) + 0.5),
+    getFillColor: d => RDBU_COLOR_SCALE(-20*(d.voltage-1) + 0.5),
     getLineWidth: 0,
     visible: viewH3
   })
@@ -109,7 +111,7 @@ export default function App({
     filled: true,
     extruded: false,
     getS2Token: d => d.s2,
-    getFillColor: d => COLOR_SCALE(-20*(d.voltage-1) + 0.5),
+    getFillColor: d => RDBU_COLOR_SCALE(-20*(d.voltage-1) + 0.5),
     getLineWidth: 0,
     visible: viewS2
   })
@@ -119,7 +121,7 @@ export default function App({
     data: voronoi,
     opacity: 0.6,
     filled: true,
-    getFillColor: f => COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
+    getFillColor: f => RDBU_COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
     getLineWidth: 0,
     pickable: true,
     visible: viewVoronoi
@@ -147,11 +149,21 @@ export default function App({
     pointType: 'circle',
     radiusUnits: 'meters',
     getPointRadius: 2,
-    getFillColor: f => COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
-    getLineColor: f => COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
+    getFillColor: f => RDBU_COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
+    getLineColor: f => RDBU_COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
     getLineWidth: 1,
     pickable: true,
     visible: viewContourPts
+  })
+
+  const currentLayer = new GeoJsonLayer({
+    id: 'currents',
+    data: lines,
+    opacity: 1,
+    getLineColor: f => RDPU_COLOR_SCALE(f.properties.current),
+    getLineWidth: f => 2*f.properties.current,
+    pickable: true,
+    visible: viewCurrents
   })
 
   const buttonStyle = (view, n) => {
@@ -170,6 +182,7 @@ export default function App({
   return (
       <DeckGL
         layers={[
+          currentLayer,
           contourPtsLayer,
           contourLayer,
           voronoiLayer,
@@ -222,6 +235,11 @@ export default function App({
           onClick = {() => toggleContourPts(!viewContourPts)}
           style = {buttonStyle(viewContourPts, 7.6)}> 
           ContourPts
+        </button>
+        <button 
+          onClick = {() => toggleCurrents(!viewCurrents)}
+          style = {buttonStyle(viewCurrents, 8.6)}> 
+          Currents
         </button>
         <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true} />
       </DeckGL>
