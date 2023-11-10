@@ -7,13 +7,14 @@ import {H3HexagonLayer, S2Layer} from '@deck.gl/geo-layers';
 import {GridLayer} from '@deck.gl/aggregation-layers';
 import {interpolateRdBu, interpolateRdPu} from 'd3-scale-chromatic';
 
-const LINES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/lines.geo.json';
-const BUSES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/buses.geo.json';
-const H3_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/h3r10.json';
-const S2_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/s2r16.json';
-const VORONOI_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/voronoi.geo.json';
-const CONTOUR_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/contours.json'
-const CONTOUR_PTS_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/contours.geo.json'
+const LINES_URL = 'data/json/lines.geo.json';
+const BUSES_URL = 'data/json/buses.geo.json';
+const H3_URL = 'data/json/h3r10.json';
+const S2_URL = 'data/json/s2r16.json';
+const VORONOI_URL = 'data/json/voronoi.geo.json';
+const CONTOUR_URL = 'data/json/contours.json'
+const CONTOUR_PTS_URL = 'data/json/contours.geo.json'
+const EV_STATIONS_URL = 'data/json/evstations.geo.json'
 
 // style map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
@@ -41,6 +42,7 @@ export default function App({
   voronoi = VORONOI_URL,
   contours = CONTOUR_URL,
   contourPts = CONTOUR_PTS_URL,
+  evStations = EV_STATIONS_URL,
   mapStyle = MAP_STYLE
 }) {
   const [viewLines, toggleLines] = useState(true);
@@ -52,6 +54,7 @@ export default function App({
   const [viewContours, toggleContours] = useState(false);
   const [viewContourPts, toggleContourPts] = useState(false);
   const [viewCurrents, toggleCurrents] = useState(false);
+  const [viewEVStations, toggleEVStations] = useState(false);
 
   const lineLayer = new GeoJsonLayer({
     id: 'lines',
@@ -70,9 +73,9 @@ export default function App({
     filled: true,
     pointType: 'circle',
     radiusUnits: 'meters',
-    getPointRadius: 3,
+    getPointRadius: 4,
     getFillColor: [255, 255, 255],
-    getLineColor: [255, 255, 255],
+    getLineWidth: 0,
     pickable: true,
     visible: viewBuses
   })
@@ -161,9 +164,23 @@ export default function App({
     data: lines,
     opacity: 1,
     getLineColor: f => RDPU_COLOR_SCALE(f.properties.current),
-    getLineWidth: f => 2*f.properties.current,
+    getLineWidth: 2,
     pickable: true,
     visible: viewCurrents
+  })
+
+  const evStationLayer = new GeoJsonLayer({
+    id: 'evStations',
+    data: evStations,
+    opacity: 0.5,
+    filled: true,
+    pointType: 'circle',
+    radiusUnits: 'meters',
+    getPointRadius: f => f.properties.rating / 5,
+    getFillColor: [0, 200, 100],
+    getLineColor: [0, 100, 50],
+    pickable: true,
+    visible: viewEVStations
   })
 
   const buttonStyle = (view, n) => {
@@ -182,7 +199,6 @@ export default function App({
   return (
       <DeckGL
         layers={[
-          currentLayer,
           contourPtsLayer,
           contourLayer,
           voronoiLayer,
@@ -190,6 +206,8 @@ export default function App({
           h3Layer,
           glyphLayer,
           busLayer,
+          evStationLayer,
+          currentLayer,
           lineLayer
         ]}
         initialViewState={INITIAL_VIEW_STATE}
@@ -238,8 +256,13 @@ export default function App({
         </button>
         <button 
           onClick = {() => toggleCurrents(!viewCurrents)}
-          style = {buttonStyle(viewCurrents, 8.6)}> 
+          style = {buttonStyle(viewCurrents, 9.0)}> 
           Currents
+        </button>
+        <button 
+          onClick = {() => toggleEVStations(!viewEVStations)}
+          style = {buttonStyle(viewEVStations, 10.2)}> 
+          EV Stations
         </button>
         <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true} />
       </DeckGL>
