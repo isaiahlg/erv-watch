@@ -47,14 +47,14 @@ export default function App({
 }) {
   const [viewLines, toggleLines] = useState(true);
   const [viewBuses, toggleBuses] = useState(false);
-  const [viewGlyphs, toggleGlyphs] = useState(true);
+  const [viewGlyphs, toggleGlyphs] = useState(false);
   const [viewH3, toggleH3] = useState(false);
   const [viewS2, toggleS2] = useState(false);
   const [viewVoronoi, toggleVoronoi] = useState(false);
   const [viewContours, toggleContours] = useState(false);
   const [viewContourPts, toggleContourPts] = useState(false);
   const [viewCurrents, toggleCurrents] = useState(false);
-  const [viewEVStations, toggleEVStations] = useState(false);
+  const [viewEVStations, toggleEVStations] = useState(true);
 
   const lineLayer = new GeoJsonLayer({
     id: 'lines',
@@ -173,12 +173,21 @@ export default function App({
     id: 'evStations',
     data: evStations,
     opacity: 0.5,
-    filled: true,
-    pointType: 'circle',
-    radiusUnits: 'meters',
-    getPointRadius: f => f.properties.rating / 5,
-    getFillColor: [0, 200, 100],
-    getLineColor: [0, 100, 50],
+    pointType: 'icon',
+    iconAtlas: 'public/ev-charge-icon.png',
+    iconMapping: {marker: {
+      x: 0, 
+      y: 0, 
+      width: 250, 
+      height: 337, 
+      mask: false,
+      anchorY: 337,
+    }},
+    getIcon: () => 'marker',
+    getIconSize: d => 1 + d.properties.rating / 100,
+    iconSizeScale: 30,
+    iconSizeUnits: 'meters',
+    iconBillboard: true,
     pickable: true,
     visible: viewEVStations
   })
