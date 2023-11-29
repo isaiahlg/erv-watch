@@ -9,8 +9,8 @@ import {interpolateRdBu, interpolateRdPu} from 'd3-scale-chromatic';
 
 const LINES_URL = 'data/json/lines.geo.json';
 const BUSES_URL = 'data/json/buses.geo.json';
-const H3_URL = 'data/json/h3r10.json';
-const S2_URL = 'data/json/s2r16.json';
+const H3_URL = 'data/json/h3r11.json';
+const S2_URL = 'data/json/s2r17.json';
 const VORONOI_URL = 'data/json/voronoi.geo.json';
 const CONTOUR_URL = 'data/json/contours.json'
 const CONTOUR_PTS_URL = 'data/json/contours.geo.json'
