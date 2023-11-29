@@ -19,9 +19,9 @@ const EV_STATIONS_URL = 'data/json/evstations.geo.json'
 // style map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 const INITIAL_VIEW_STATE = {
-  latitude: 37.78,
-  longitude: -122.212,
-  zoom: 15,
+  latitude: 37.817,
+  longitude: -122.242,
+  zoom: 16,
   maxZoom: 20,
   pitch: 60,
   bearing: 0
@@ -46,7 +46,7 @@ export default function App({
   mapStyle = MAP_STYLE
 }) {
   const [viewLines, toggleLines] = useState(true);
-  const [viewBuses, toggleBuses] = useState(false);
+  const [viewBuses, toggleBuses] = useState(true);
   const [viewGlyphs, toggleGlyphs] = useState(false);
   const [viewH3, toggleH3] = useState(false);
   const [viewS2, toggleS2] = useState(false);
@@ -54,7 +54,7 @@ export default function App({
   const [viewContours, toggleContours] = useState(false);
   const [viewContourPts, toggleContourPts] = useState(false);
   const [viewCurrents, toggleCurrents] = useState(false);
-  const [viewEVStations, toggleEVStations] = useState(true);
+  const [viewEVStations, toggleEVStations] = useState(false);
 
   const lineLayer = new GeoJsonLayer({
     id: 'lines',
