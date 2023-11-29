@@ -7,14 +7,14 @@ import {H3HexagonLayer, S2Layer} from '@deck.gl/geo-layers';
 import {GridLayer} from '@deck.gl/aggregation-layers';
 import {interpolateRdBu, interpolateRdPu} from 'd3-scale-chromatic';
 
-const LINES_URL = 'data/json/lines.geo.json';
-const BUSES_URL = 'data/json/buses.geo.json';
-const H3_URL = 'data/json/h3r10.json';
-const S2_URL = 'data/json/s2r16.json';
-const VORONOI_URL = 'data/json/voronoi.geo.json';
-const CONTOUR_URL = 'data/json/contours.json'
-const CONTOUR_PTS_URL = 'data/json/contours.geo.json'
-const EV_STATIONS_URL = 'data/json/evstations.geo.json'
+const LINES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/lines.geo.json';
+const BUSES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/buses.geo.json';
+const H3_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/h3r10.json';
+const S2_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/s2r16.json';
+const VORONOI_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/voronoi.geo.json';
+const CONTOUR_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/contours.json'
+const CONTOUR_PTS_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/contours.geo.json'
+const EV_STATIONS_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/evstations.geo.json'
 
 // style map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
