@@ -13,8 +13,10 @@ const H3_URL = 'data/json/h3r11.json';
 const S2_URL = 'data/json/s2r17.json';
 const VORONOI_URL = 'data/json/voronoi.geo.json';
 const CONTOUR_URL = 'data/json/contours.json'
-const CONTOUR_PTS_URL = 'data/json/contours.geo.json'
-const EV_STATIONS_URL = 'data/json/evstations.geo.json'
+const EV_STATIONS_URL = 'data/json/ev.geo.json'
+const PV_URL = 'data/json/pv.geo.json'
+const STORAGE_URL = 'data/json/storage.geo.json'
+const TX_URL = 'data/json/tx.geo.json'
 
 // style map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
@@ -34,31 +36,23 @@ const range = n => [...Array(n).keys()]
 const RdBuDiscrete = range(102).map(i => RDBU_COLOR_SCALE(1-i/101));
 
 // primary component
-export default function App({
-  buses = BUSES_URL, 
-  lines = LINES_URL, 
-  hexes = H3_URL, 
-  s2tiles = S2_URL,
-  voronoi = VORONOI_URL,
-  contours = CONTOUR_URL,
-  contourPts = CONTOUR_PTS_URL,
-  evStations = EV_STATIONS_URL,
-  mapStyle = MAP_STYLE
-}) {
+export default function App() {
   const [viewLines, toggleLines] = useState(true);
-  const [viewBuses, toggleBuses] = useState(true);
-  const [viewGlyphs, toggleGlyphs] = useState(false);
+  const [viewBuses, toggleBuses] = useState(false);
+  const [viewGlyphs, toggleGlyphs] = useState(true);
   const [viewH3, toggleH3] = useState(false);
   const [viewS2, toggleS2] = useState(false);
   const [viewVoronoi, toggleVoronoi] = useState(false);
   const [viewContours, toggleContours] = useState(false);
-  const [viewContourPts, toggleContourPts] = useState(false);
   const [viewCurrents, toggleCurrents] = useState(false);
-  const [viewEVStations, toggleEVStations] = useState(false);
+  const [viewEVStations, toggleEVStations] = useState(true);
+  const [viewPV, togglePV] = useState(false);
+  const [viewStorage, toggleStorage] = useState(true);
+  const [viewTX, toggleTX] = useState(true);
 
   const lineLayer = new GeoJsonLayer({
     id: 'lines',
-    data: lines,
+    data: LINES_URL,
     opacity: 0.1,
     getLineColor: [255, 255, 255],
     getLineWidth: 2,
@@ -68,7 +62,7 @@ export default function App({
 
   const busLayer = new GeoJsonLayer({
     id: 'buses',
-    data: buses,
+    data: BUSES_URL,
     opacity: 0.1,
     filled: true,
     pointType: 'circle',
@@ -82,7 +76,7 @@ export default function App({
 
   const glyphLayer = new GeoJsonLayer({
       id: 'glyphs',
-      data: buses,
+      data: BUSES_URL,
       opacity: 0.8,
       filled: true,
       pointType: 'circle',
@@ -97,7 +91,7 @@ export default function App({
 
   const h3Layer = new H3HexagonLayer({
     id: 'h3-1',
-    data: hexes,
+    data: H3_URL,
     opacity: 0.6,
     filled: true,
     extruded: false,
@@ -109,7 +103,7 @@ export default function App({
 
   const s2Layer = new S2Layer({
     id: 's2-1',
-    data: s2tiles,
+    data: S2_URL,
     opacity: 0.6,
     filled: true,
     extruded: false,
@@ -121,7 +115,7 @@ export default function App({
 
   const voronoiLayer = new GeoJsonLayer({
     id: 'voronoi',
-    data: voronoi,
+    data: VORONOI_URL,
     opacity: 0.6,
     filled: true,
     getFillColor: f => RDBU_COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
@@ -132,7 +126,7 @@ export default function App({
 
   const contourLayer = new GridLayer({
     id: 'contours',
-    data: contours,
+    data: CONTOUR_URL,
     opacity: 0.8,
     cellSize: 14,
     getPosition: d => d.geometry.coordinates,
@@ -144,24 +138,9 @@ export default function App({
     visible: viewContours
   })
 
-  const contourPtsLayer = new GeoJsonLayer({
-    id: 'contourPts',
-    data: contourPts,
-    opacity: 1,
-    filled: true, 
-    pointType: 'circle',
-    radiusUnits: 'meters',
-    getPointRadius: 2,
-    getFillColor: f => RDBU_COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
-    getLineColor: f => RDBU_COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
-    getLineWidth: 1,
-    pickable: true,
-    visible: viewContourPts
-  })
-
   const currentLayer = new GeoJsonLayer({
     id: 'currents',
-    data: lines,
+    data: LINES_URL,
     opacity: 1,
     getLineColor: f => RDPU_COLOR_SCALE(f.properties.current),
     getLineWidth: 2,
@@ -171,7 +150,7 @@ export default function App({
 
   const evStationLayer = new GeoJsonLayer({
     id: 'evStations',
-    data: evStations,
+    data: EV_STATIONS_URL,
     opacity: 0.5,
     pointType: 'icon',
     iconAtlas: 'public/ev-charge-icon.png',
@@ -184,12 +163,81 @@ export default function App({
       anchorY: 337,
     }},
     getIcon: () => 'marker',
-    getIconSize: d => 1 + d.properties.rating / 100,
+    getIconSize: 2,
     iconSizeScale: 30,
     iconSizeUnits: 'meters',
     iconBillboard: true,
     pickable: true,
     visible: viewEVStations
+  })
+
+  const pvLayer = new GeoJsonLayer({
+    id: 'pv',
+    data: PV_URL,
+    opacity: 0.5,
+    pointType: 'icon',
+    iconAtlas: 'public/pv.png',
+    iconMapping: {marker: {
+      x: 0, 
+      y: 0, 
+      width: 512, 
+      height: 412, 
+      mask: false,
+      anchorY: 412,
+    }},
+    getIcon: () => 'marker',
+    getIconSize: 0.3,
+    iconSizeScale: 30,
+    iconSizeUnits: 'meters',
+    iconBillboard: true,
+    pickable: true,
+    visible: viewPV
+  })
+
+  const storageLayer = new GeoJsonLayer({
+    id: 'storage',
+    data: STORAGE_URL,
+    opacity: 0.5,
+    pointType: 'icon',
+    iconAtlas: 'public/storage.png',
+    iconMapping: {marker: {
+      x: 0, 
+      y: 0, 
+      width: 512, 
+      height: 390, 
+      mask: false,
+      anchorY: 390,
+    }},
+    getIcon: () => 'marker',
+    getIconSize: 0.7,
+    iconSizeScale: 30,
+    iconSizeUnits: 'meters',
+    iconBillboard: true,
+    pickable: true,
+    visible: viewStorage
+  })
+
+  const txLayer = new GeoJsonLayer({
+    id: 'tx',
+    data: TX_URL,
+    opacity: 0.5,
+    pointType: 'icon',
+    iconAtlas: 'public/tx.png',
+    iconMapping: {marker: {
+      x: 0, 
+      y: 0, 
+      width: 800, 
+      height: 600, 
+      mask: false,
+      anchorY: 600,
+    }},
+    getIcon: () => 'marker',
+    getIconSize: 0.3,
+    iconSizeScale: 30,
+    iconSizeUnits: 'meters',
+    iconBillboard: true,
+    pickable: true,
+    visible: viewTX
   })
 
   const buttonStyle = (view, n) => {
@@ -208,7 +256,6 @@ export default function App({
   return (
       <DeckGL
         layers={[
-          contourPtsLayer,
           contourLayer,
           voronoiLayer,
           s2Layer,
@@ -216,6 +263,9 @@ export default function App({
           glyphLayer,
           busLayer,
           evStationLayer,
+          storageLayer,
+          pvLayer,
+          txLayer,
           currentLayer,
           lineLayer
         ]}
@@ -259,21 +309,31 @@ export default function App({
           Contours
         </button>
         <button 
-          onClick = {() => toggleContourPts(!viewContourPts)}
-          style = {buttonStyle(viewContourPts, 7.6)}> 
-          ContourPts
-        </button>
-        <button 
           onClick = {() => toggleCurrents(!viewCurrents)}
-          style = {buttonStyle(viewCurrents, 9.0)}> 
+          style = {buttonStyle(viewCurrents, 7.6)}> 
           Currents
         </button>
         <button 
           onClick = {() => toggleEVStations(!viewEVStations)}
-          style = {buttonStyle(viewEVStations, 10.2)}> 
+          style = {buttonStyle(viewEVStations, 8.8)}> 
           EV Stations
         </button>
-        <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true} />
+        <button 
+          onClick = {() => togglePV(!viewPV)}
+          style = {buttonStyle(viewPV, 10.2)}> 
+          PV
+        </button>
+        <button 
+          onClick = {() => toggleStorage(!viewStorage)}
+          style = {buttonStyle(viewStorage, 10.9)}> 
+          Storage
+        </button>
+        <button 
+          onClick = {() => toggleTX(!viewTX)}
+          style = {buttonStyle(viewTX, 12)}> 
+          Transformers
+        </button>
+        <Map reuseMaps mapLib={maplibregl} mapStyle={MAP_STYLE} preventStyleDiffing={true} />
       </DeckGL>
   );
 }
