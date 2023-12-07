@@ -46,11 +46,11 @@ export default function App({
   mapStyle = MAP_STYLE
 }) {
   const [viewLines, toggleLines] = useState(true);
-  const [viewBuses, toggleBuses] = useState(false);
+  const [viewBuses, toggleBuses] = useState(true);
   const [viewGlyphs, toggleGlyphs] = useState(false);
   const [viewH3, toggleH3] = useState(false);
   const [viewS2, toggleS2] = useState(false);
-  const [viewVoronoi, toggleVoronoi] = useState(false);
+  const [viewVoronoi, toggleVoronoi] = useState(true);
   const [viewContours, toggleContours] = useState(false);
   const [viewContourPts, toggleContourPts] = useState(false);
   const [viewCurrents, toggleCurrents] = useState(false);
