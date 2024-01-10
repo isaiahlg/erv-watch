@@ -174,7 +174,7 @@ export default function App({
     data: evStations,
     opacity: 0.5,
     pointType: 'icon',
-    iconAtlas: 'https://github.com/geohai/vite-vis-dss/blob/main/public/ev-charge-icon.png',
+    iconAtlas: 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/public/ev-charge-icon.png',
     iconMapping: {marker: {
       x: 0, 
       y: 0, 
