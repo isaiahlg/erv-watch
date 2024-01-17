@@ -1,8 +1,9 @@
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import Map from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
 import DeckGL from '@deck.gl/react';
 import {GeoJsonLayer} from '@deck.gl/layers';
+import {csv} from 'd3-fetch';
 // import {H3HexagonLayer, S2Layer} from '@deck.gl/geo-layers';
 // import {GridLayer} from '@deck.gl/aggregation-layers';
 // import {interpolateRdBu, interpolateRdPu} from 'd3-scale-chromatic';
@@ -50,6 +51,25 @@ export default function App() {
   // const [viewPV, togglePV] = useState(false);
   // const [viewStorage, toggleStorage] = useState(true);
   // const [viewTX, toggleTX] = useState(true);
+  // const [loads, setLoads] = useState({})
+  const [timestep, setTimestep] = useState(1)
+  const [loads, setLoads] = useState({})
+
+  const stepTime = (hours) => {
+    setTimestep((timestep + hours) % 168)
+    
+  }
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = csv('data/csv/hourly_load_timesteps.csv');
+      const data = await response.json();
+      setLoads(data);
+      console.log(data)
+    };
+    fetchData();
+  }, []);
+
 
   // const lineLayer = new GeoJsonLayer({
   //   id: 'lines',
@@ -241,13 +261,26 @@ export default function App() {
   //   visible: viewTX
   // })
 
-  const buttonStyle = (view, n) => {
+  const layerButtonStyle = (view, n) => {
     return ({
     position: 'absolute', 
     left: 5 + 75*n, 
     top: 5,
     color: 'white',
     backgroundColor: view ? 'blue' : 'gray',
+    border: 'none',
+    padding: '10px',
+    borderRadius: '10px',
+    boxShadow: '0px 0px 10px 0 rgba(255, 255, 255, 0.2)'
+  })};
+
+  const timeButtonStyle = (n) => {
+    return ({
+    position: 'absolute', 
+    right: 5 + 75*n, 
+    top: 5,
+    color: 'white',
+    backgroundColor: 'green',
     border: 'none',
     padding: '10px',
     borderRadius: '10px',
@@ -265,8 +298,23 @@ export default function App() {
       >
         <button 
           onClick = {() => toggleBuses(!viewBuses)}
-          style = {buttonStyle(viewBuses, 0.9)}> 
+          style = {layerButtonStyle(viewBuses, 0.1)}> 
           Buses
+        </button>
+        <button 
+          onClick = {() => stepTime(1)}
+          style = {timeButtonStyle(0)}> 
+          ►►
+        </button>
+        <button 
+          onClick = {() => console.log("clicked")}
+          style = {timeButtonStyle(0.7)}> 
+          ►
+        </button>
+        <button 
+         onClick = {() => stepTime(-1)}
+          style = {timeButtonStyle(1.25)}> 
+          ◄◄
         </button>
         <Map reuseMaps mapLib={maplibregl} mapStyle={MAP_STYLE} preventStyleDiffing={true} />
       </DeckGL>
