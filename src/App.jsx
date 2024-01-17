@@ -6,7 +6,7 @@ import {GeoJsonLayer} from '@deck.gl/layers';
 import {csv} from 'd3-fetch';
 // import {H3HexagonLayer, S2Layer} from '@deck.gl/geo-layers';
 // import {GridLayer} from '@deck.gl/aggregation-layers';
-// import {interpolateRdBu, interpolateRdPu} from 'd3-scale-chromatic';
+import {interpolateRdBu} from 'd3-scale-chromatic';
 
 // const LINES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/lines.geo.json';
 // const BUSES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/buses.geo.json';
@@ -30,8 +30,8 @@ const INITIAL_VIEW_STATE = {
   pitch: 60,
   bearing: 0
 };
-// const toRGBArray = rgbStr => rgbStr.match(/\d+/g).map(Number);
-// const RDBU_COLOR_SCALE = v => toRGBArray(interpolateRdBu(v));
+const toRGBArray = rgbStr => rgbStr.match(/\d+/g).map(Number);
+const RDBU_COLOR_SCALE = v => toRGBArray(interpolateRdBu(v));
 // const RDPU_COLOR_SCALE = v => toRGBArray(interpolateRdPu(v));
 const getTooltip = ({object}) => JSON.stringify(object);
 // const range = n => [...Array(n).keys()]
@@ -52,23 +52,38 @@ export default function App() {
   // const [viewStorage, toggleStorage] = useState(true);
   // const [viewTX, toggleTX] = useState(true);
   // const [loads, setLoads] = useState({})
-  const [timestep, setTimestep] = useState(1)
-  const [loads, setLoads] = useState({})
-
-  const stepTime = (hours) => {
-    setTimestep((timestep + hours) % 168)
-    
-  }
-
-  useEffect(() => {
+  const [timestep, setTimestep] = useState(1);
+  const [allLoads, setAllLoads] = useState([]);
+  const [currentLoads, setCurrentLoads] = useState([]);
+  
+  useEffect(() => { 
     const fetchData = async () => {
-      const response = csv('data/csv/hourly_load_timesteps.csv');
-      const data = await response.json();
-      setLoads(data);
+      const data = await csv('data/csv/hourly_load_timesteps.csv');
       console.log(data)
+      setAllLoads(data);
     };
+
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const getLoadsByTimestep = (timestep) => {
+      return allLoads.filter((l) => +l.timestep === timestep);
+    }
+    var l = getLoadsByTimestep(1);
+    setCurrentLoads(l); 
+  }, [allLoads, timestep]);
+  
+  const stepTime = (hours) => {
+    setTimestep((prevTimestep) => (prevTimestep + hours) % 168);
+    console.log("New timestep is: ", timestep);
+    setCurrentLoads(getLoadsByTimestep(timestep + hours));
+    console.log("New current loads are: ", getLoadsByTimestep(timestep + hours));
+  };
+  
+  const getLoadsByTimestep = (timestep) => {
+    return allLoads.filter((l) => +l.timestep === timestep);
+  };
 
 
   // const lineLayer = new GeoJsonLayer({
@@ -88,8 +103,14 @@ export default function App() {
     filled: true,
     pointType: 'circle',
     radiusUnits: 'meters',
-    getPointRadius: 100,
-    getFillColor: [255, 255, 255],
+    getPointRadius: 200,
+    // getFillColor: [255, 255, 255],
+    getFillColor: s => RDBU_COLOR_SCALE(+currentLoads.find(d => +d.school_id === s.properties.ID).power),
+    // getFillColor: s => {
+    //   var power = +currentLoads.find(d => +d.school_id === s.properties.ID).power
+    //   console.log(power)
+    //   RDBU_COLOR_SCALE(power)
+    // },
     getLineWidth: 0,
     pickable: true,
     visible: viewBuses
