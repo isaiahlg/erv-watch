@@ -4,21 +4,9 @@ import maplibregl from 'maplibre-gl';
 import DeckGL from '@deck.gl/react';
 import {GeoJsonLayer} from '@deck.gl/layers';
 import {csv} from 'd3-fetch';
-// import {H3HexagonLayer, S2Layer} from '@deck.gl/geo-layers';
-// import {GridLayer} from '@deck.gl/aggregation-layers';
 import {interpolateRdBu} from 'd3-scale-chromatic';
 
-// const LINES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/lines.geo.json';
-// const BUSES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/buses.geo.json';
 const BUSES_URL = 'data/json/schools.geo.json';
-// const H3_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/h3r10.json';
-// const S2_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/s2r16.json';
-// const VORONOI_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/voronoi.geo.json';
-// const CONTOUR_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/contours.json'
-// const EV_STATIONS_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/evstations.geo.json'
-// const PV_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/pv.geo.json'
-// const STORAGE_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/storage.geo.json'
-// const TX_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/tx.geo.json'
 
 // style map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
@@ -32,255 +20,58 @@ const INITIAL_VIEW_STATE = {
 };
 const toRGBArray = rgbStr => rgbStr.match(/\d+/g).map(Number);
 const RDBU_COLOR_SCALE = v => toRGBArray(interpolateRdBu(v));
-// const RDPU_COLOR_SCALE = v => toRGBArray(interpolateRdPu(v));
 const getTooltip = ({object}) => JSON.stringify(object);
-// const range = n => [...Array(n).keys()]
-// const RdBuDiscrete = range(102).map(i => RDBU_COLOR_SCALE(1-i/101));
 
 // primary component
 export default function App() {
-  // const [viewLines, toggleLines] = useState(true);
   const [viewBuses, toggleBuses] = useState(true);
-  // const [viewGlyphs, toggleGlyphs] = useState(false);
-  // const [viewH3, toggleH3] = useState(false);
-  // const [viewS2, toggleS2] = useState(false);
-  // const [viewVoronoi, toggleVoronoi] = useState(true);
-  // const [viewContours, toggleContours] = useState(false);
-  // const [viewCurrents, toggleCurrents] = useState(false);
-  // const [viewEVStations, toggleEVStations] = useState(true);
-  // const [viewPV, togglePV] = useState(false);
-  // const [viewStorage, toggleStorage] = useState(true);
-  // const [viewTX, toggleTX] = useState(true);
-  // const [loads, setLoads] = useState({})
-  const [timestep, setTimestep] = useState(1);
+  const [timestep, setTimestep] = useState(24);
   const [allLoads, setAllLoads] = useState([]);
   const [currentLoads, setCurrentLoads] = useState([]);
   
+  // effect to fetch all data at the start of the app
   useEffect(() => { 
     const fetchData = async () => {
       const data = await csv('data/csv/hourly_load_timesteps.csv');
-      console.log(data)
+      console.log("Fetched the full load data: ", data)
       setAllLoads(data);
     };
 
     fetchData();
   }, []);
 
+  // effect to fetch loads for current timestep
   useEffect(() => {
+    console.log("New timestep: ", timestep)
     const getLoadsByTimestep = (timestep) => {
       return allLoads.filter((l) => +l.timestep === timestep);
-    }
-    var l = getLoadsByTimestep(1);
-    setCurrentLoads(l); 
+    };
+    setCurrentLoads(getLoadsByTimestep(timestep));
+    console.log("Current loads: ", getLoadsByTimestep(timestep)) 
   }, [allLoads, timestep]);
   
+  // function to update the timestep when buttons are clicked
   const stepTime = (hours) => {
-    setTimestep((prevTimestep) => (prevTimestep + hours) % 168);
-    console.log("New timestep is: ", timestep);
-    setCurrentLoads(getLoadsByTimestep(timestep + hours));
-    console.log("New current loads are: ", getLoadsByTimestep(timestep + hours));
+    setTimestep(timestep + hours % 168);
   };
-  
-  const getLoadsByTimestep = (timestep) => {
-    return allLoads.filter((l) => +l.timestep === timestep);
-  };
-
-
-  // const lineLayer = new GeoJsonLayer({
-  //   id: 'lines',
-  //   data: LINES_URL,
-  //   opacity: 0.1,
-  //   getLineColor: [255, 255, 255],
-  //   getLineWidth: 2,
-  //   pickable: true,
-  //   visible: viewLines
-  // })
 
   const busLayer = new GeoJsonLayer({
     id: 'buses',
     data: BUSES_URL,
-    opacity: 1,
-    filled: true,
     pointType: 'circle',
     radiusUnits: 'meters',
     getPointRadius: 200,
-    // getFillColor: [255, 255, 255],
-    getFillColor: s => RDBU_COLOR_SCALE(+currentLoads.find(d => +d.school_id === s.properties.ID).power),
-    // getFillColor: s => {
-    //   var power = +currentLoads.find(d => +d.school_id === s.properties.ID).power
-    //   console.log(power)
-    //   RDBU_COLOR_SCALE(power)
-    // },
-    getLineWidth: 0,
-    pickable: true,
+    // getFillColor: [255, 255, 255], // works
+    // getFillColor: [255, 255-timestep*100, 255-timestep*100], // works
+    // getFillColor: RDBU_COLOR_SCALE(timestep/3), // works
+    getFillColor: s => {
+      var power = +currentLoads.find(d => +d.school_id === s.properties.ID).power
+      console.log(power)
+      return RDBU_COLOR_SCALE(power/600)
+    },
+    // getFillColor: s => {RDBU_COLOR_SCALE(+currentLoads.find(d => +d.school_id === s.properties.ID).power / 600),
     visible: viewBuses
   })
-
-  // const glyphLayer = new GeoJsonLayer({
-  //     id: 'glyphs',
-  //     data: BUSES_URL,
-  //     opacity: 0.8,
-  //     filled: true,
-  //     pointType: 'circle',
-  //     pointRadiusMaxPixels: 50,
-  //     radiusUnits: 'meters',
-  //     getPointRadius: f => 400 * Math.abs(f.properties.voltage-1),
-  //     getFillColor: f => RDBU_COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
-  //     getLineWidth: 0,
-  //     pickable: true,
-  //     visible: viewGlyphs
-  //   })
-
-  // const h3Layer = new H3HexagonLayer({
-  //   id: 'h3-1',
-  //   data: H3_URL,
-  //   opacity: 0.6,
-  //   filled: true,
-  //   extruded: false,
-  //   getHexagon: d => d.h3,
-  //   getFillColor: d => RDBU_COLOR_SCALE(-20*(d.voltage-1) + 0.5),
-  //   getLineWidth: 0,
-  //   visible: viewH3
-  // })
-
-  // const s2Layer = new S2Layer({
-  //   id: 's2-1',
-  //   data: S2_URL,
-  //   opacity: 0.6,
-  //   filled: true,
-  //   extruded: false,
-  //   getS2Token: d => d.s2,
-  //   getFillColor: d => RDBU_COLOR_SCALE(-20*(d.voltage-1) + 0.5),
-  //   getLineWidth: 0,
-  //   visible: viewS2
-  // })
-
-  // const voronoiLayer = new GeoJsonLayer({
-  //   id: 'voronoi',
-  //   data: VORONOI_URL,
-  //   opacity: 0.6,
-  //   filled: true,
-  //   getFillColor: f => RDBU_COLOR_SCALE(-20*(f.properties.voltage-1) + 0.5),
-  //   getLineWidth: 0,
-  //   pickable: true,
-  //   visible: viewVoronoi
-  // })
-
-  // const contourLayer = new GridLayer({
-  //   id: 'contours',
-  //   data: CONTOUR_URL,
-  //   opacity: 0.8,
-  //   cellSize: 14,
-  //   getPosition: d => d.geometry.coordinates,
-  //   getColorWeight: d => d.properties.voltage,
-  //   colorDomain: [0.975, 1.025],
-  //   colorRange: RdBuDiscrete,
-  //   colorAggregation: 'MEAN',
-  //   pickable: true,
-  //   visible: viewContours
-  // })
-
-  // const currentLayer = new GeoJsonLayer({
-  //   id: 'currents',
-  //   data: LINES_URL,
-  //   opacity: 1,
-  //   getLineColor: f => RDPU_COLOR_SCALE(f.properties.current),
-  //   getLineWidth: 2,
-  //   pickable: true,
-  //   visible: viewCurrents
-  // })
-
-  // const evStationLayer = new GeoJsonLayer({
-  //   id: 'evStations',
-  //   data: EV_STATIONS_URL,
-  //   opacity: 0.5,
-  //   pointType: 'icon',
-  //   iconAtlas: 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/public/ev-charge-icon.png',
-  //   iconMapping: {marker: {
-  //     x: 0, 
-  //     y: 0, 
-  //     width: 250, 
-  //     height: 337, 
-  //     mask: false,
-  //     anchorY: 337,
-  //   }},
-  //   getIcon: () => 'marker',
-  //   getIconSize: 2,
-  //   iconSizeScale: 30,
-  //   iconSizeUnits: 'meters',
-  //   iconBillboard: true,
-  //   pickable: true,
-  //   visible: viewEVStations
-  // })
-
-  // const pvLayer = new GeoJsonLayer({
-  //   id: 'pv',
-  //   data: PV_URL,
-  //   opacity: 0.5,
-  //   pointType: 'icon',
-  //   iconAtlas: 'public/pv.png',
-  //   iconMapping: {marker: {
-  //     x: 0, 
-  //     y: 0, 
-  //     width: 512, 
-  //     height: 412, 
-  //     mask: false,
-  //     anchorY: 412,
-  //   }},
-  //   getIcon: () => 'marker',
-  //   getIconSize: 0.3,
-  //   iconSizeScale: 30,
-  //   iconSizeUnits: 'meters',
-  //   iconBillboard: true,
-  //   pickable: true,
-  //   visible: viewPV
-  // })
-
-  // const storageLayer = new GeoJsonLayer({
-  //   id: 'storage',
-  //   data: STORAGE_URL,
-  //   opacity: 0.5,
-  //   pointType: 'icon',
-  //   iconAtlas: 'public/storage.png',
-  //   iconMapping: {marker: {
-  //     x: 0, 
-  //     y: 0, 
-  //     width: 512, 
-  //     height: 390, 
-  //     mask: false,
-  //     anchorY: 390,
-  //   }},
-  //   getIcon: () => 'marker',
-  //   getIconSize: 0.7,
-  //   iconSizeScale: 30,
-  //   iconSizeUnits: 'meters',
-  //   iconBillboard: true,
-  //   pickable: true,
-  //   visible: viewStorage
-  // })
-
-  // const txLayer = new GeoJsonLayer({
-  //   id: 'tx',
-  //   data: TX_URL,
-  //   opacity: 0.5,
-  //   pointType: 'icon',
-  //   iconAtlas: 'public/tx.png',
-  //   iconMapping: {marker: {
-  //     x: 0, 
-  //     y: 0, 
-  //     width: 800, 
-  //     height: 600, 
-  //     mask: false,
-  //     anchorY: 600,
-  //   }},
-  //   getIcon: () => 'marker',
-  //   getIconSize: 0.3,
-  //   iconSizeScale: 30,
-  //   iconSizeUnits: 'meters',
-  //   iconBillboard: true,
-  //   pickable: true,
-  //   visible: viewTX
-  // })
 
   const layerButtonStyle = (view, n) => {
     return ({
@@ -330,7 +121,7 @@ export default function App() {
         <button 
           onClick = {() => console.log("clicked")}
           style = {timeButtonStyle(0.7)}> 
-          ►
+          {timestep}
         </button>
         <button 
          onClick = {() => stepTime(-1)}
