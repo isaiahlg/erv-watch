@@ -28,6 +28,10 @@ export default function App() {
   const [timestep, setTimestep] = useState(24);
   const [allLoads, setAllLoads] = useState([]);
   const [currentLoads, setCurrentLoads] = useState([]);
+  const [animate, setAnimate] = useState(false);
+  
+  let hour = timestep % 24;
+  let day = Math.floor(timestep / 24) % 7 + 1;
   
   // effect to fetch all data at the start of the app
   useEffect(() => { 
@@ -40,6 +44,16 @@ export default function App() {
     fetchData();
   }, []);
 
+  // effect to animate the timestep
+  useEffect(() => {
+    if (animate) {
+      const interval = setInterval(() => {
+        setTimestep((timestep + 1) % 168)
+      }, 100)
+      return () => clearInterval(interval)
+    }
+  }, [animate, timestep])
+
   // effect to fetch loads for current timestep
   useEffect(() => {
     console.log("New timestep: ", timestep)
@@ -47,7 +61,7 @@ export default function App() {
       return allLoads.filter((l) => +l.timestep === timestep);
     };
     setCurrentLoads(getLoadsByTimestep(timestep));
-    console.log("Current loads: ", getLoadsByTimestep(timestep)) 
+    // console.log("Current loads: ", getLoadsByTimestep(timestep)) 
   }, [allLoads, timestep]);
   
   // function to update the timestep when buttons are clicked
@@ -60,16 +74,19 @@ export default function App() {
     data: BUSES_URL,
     pointType: 'circle',
     radiusUnits: 'meters',
-    getPointRadius: 200,
-    // getFillColor: [255, 255, 255], // works
-    // getFillColor: [255, 255-timestep*100, 255-timestep*100], // works
-    // getFillColor: RDBU_COLOR_SCALE(timestep/3), // works
+    getPointRadius: s => {
+      var power = +currentLoads.find(d => +d.school_id === s.properties.ID).power
+      return power + 200
+    },
     getFillColor: s => {
       var power = +currentLoads.find(d => +d.school_id === s.properties.ID).power
-      console.log(power)
-      return RDBU_COLOR_SCALE(power/600)
+      return RDBU_COLOR_SCALE(1-power/800)
     },
-    // getFillColor: s => {RDBU_COLOR_SCALE(+currentLoads.find(d => +d.school_id === s.properties.ID).power / 600),
+    updateTriggers: {
+      getFillColor: currentLoads,
+      getPointRadius: currentLoads,
+    },
+    getLineWidth: 0,
     visible: viewBuses
   })
 
@@ -86,13 +103,26 @@ export default function App() {
     boxShadow: '0px 0px 10px 0 rgba(255, 255, 255, 0.2)'
   })};
 
-  const timeButtonStyle = (n) => {
+  const skipButtonStyle = (n) => {
     return ({
     position: 'absolute', 
     right: 5 + 75*n, 
     top: 5,
     color: 'white',
     backgroundColor: 'green',
+    border: 'none',
+    padding: '10px',
+    borderRadius: '10px',
+    boxShadow: '0px 0px 10px 0 rgba(255, 255, 255, 0.2)'
+  })};
+
+  const playButtonStyle = (n) => {
+    return ({
+    position: 'absolute', 
+    right: 5 + 75*n, 
+    top: 5,
+    color: 'white',
+    backgroundColor: animate ? 'red' : 'green',
     border: 'none',
     padding: '10px',
     borderRadius: '10px',
@@ -115,18 +145,22 @@ export default function App() {
         </button>
         <button 
           onClick = {() => stepTime(1)}
-          style = {timeButtonStyle(0)}> 
+          style = {skipButtonStyle(0)}> 
           ►►
         </button>
         <button 
-          onClick = {() => console.log("clicked")}
-          style = {timeButtonStyle(0.7)}> 
-          {timestep}
+          onClick = {() => setAnimate(!animate)}
+          style = {playButtonStyle(0.7)}> 
+          {animate ? "■" : "►"}
         </button>
         <button 
          onClick = {() => stepTime(-1)}
-          style = {timeButtonStyle(1.25)}> 
+          style = {skipButtonStyle(1.25)}> 
           ◄◄
+        </button>
+        <button 
+          style = {playButtonStyle(2.2)}> 
+          Day: {day} Hour: {hour}
         </button>
         <Map reuseMaps mapLib={maplibregl} mapStyle={MAP_STYLE} preventStyleDiffing={true} />
       </DeckGL>
