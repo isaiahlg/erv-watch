@@ -56,9 +56,9 @@ export default function App() {
   const [times, setTimes] = useState([]);
   const [currentVoltages, setCurrentVoltages] = useState([]);
   
-  const [animate, setAnimate] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [speed, setSpeed] = useState(1);
+  const [animate, setAnimate] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [speed, setSpeed] = useState(8);
 
   // effect to fetch all data at the start of the app
   useEffect(() => { 
@@ -135,16 +135,16 @@ export default function App() {
       pointRadiusMaxPixels: 50,
       radiusUnits: 'meters',
       getPointRadius: f => {
-        var voltage = +currentVoltages[f.properties.bus]
+        var voltage = loading ? 1 : +currentVoltages[f.properties.bus]
         return 400 * Math.abs(voltage-1)
       },
       getFillColor: f => {
-        var voltage = +currentVoltages[f.properties.bus]
+        var voltage = loading ? 1 : +currentVoltages[f.properties.bus]
         return RDBU_COLOR_SCALE(-20*(voltage-1) + 0.5)
       },
       updateTriggers: {
-        getFillColor: [currentVoltages],
-        getPointRadius: [currentVoltages]
+        getFillColor: [currentVoltages, loading],
+        getPointRadius: [currentVoltages, loading]
       },
       getLineWidth: 0,
       pickable: true,
@@ -181,11 +181,11 @@ export default function App() {
     opacity: 0.6,
     filled: true,
     getFillColor: f => {
-      var voltage = +currentVoltages[f.properties.bus]
+      var voltage = loading ? 1 : +currentVoltages[f.properties.bus]
       return RDBU_COLOR_SCALE(-20*(voltage-1) + 0.5)
     },
     updateTriggers: {
-      getFillColor: [currentVoltages],
+      getFillColor: [currentVoltages, loading],
     },
     getLineWidth: 0,
     pickable: true,
@@ -221,7 +221,7 @@ export default function App() {
     data: EV_STATIONS_URL,
     opacity: 0.5,
     pointType: 'icon',
-    iconAtlas: 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/public/ev-charge-icon.png',
+    iconAtlas: '/ev-charge-icon.png',
     iconMapping: {marker: {
       x: 0, 
       y: 0, 
@@ -244,7 +244,7 @@ export default function App() {
     data: PV_URL,
     opacity: 0.5,
     pointType: 'icon',
-    iconAtlas: 'public/pv.png',
+    iconAtlas: '/pv.png',
     iconMapping: {marker: {
       x: 0, 
       y: 0, 
@@ -267,7 +267,7 @@ export default function App() {
     data: STORAGE_URL,
     opacity: 0.5,
     pointType: 'icon',
-    iconAtlas: 'public/storage.png',
+    iconAtlas: '/storage.png',
     iconMapping: {marker: {
       x: 0, 
       y: 0, 
@@ -290,7 +290,7 @@ export default function App() {
     data: TX_URL,
     opacity: 0.5,
     pointType: 'icon',
-    iconAtlas: 'public/tx.png',
+    iconAtlas: '/tx.png',
     iconMapping: {marker: {
       x: 0, 
       y: 0, 
@@ -475,9 +475,9 @@ export default function App() {
         </button>
         <button 
           style = {infoButtonStyle(5.8)}> 
-          {times[timestep].time}
+          {loading ? "Loading..." : times[timestep].time}
         </button>
-        <img src="public/loading.gif" style={{position: 'absolute', left: '45%', top: '30%', width: 200, height: 200, opacity: 0.5, display: loading ? 'block' : 'none'}} />
+        <img src="/loading.gif" style={{position: 'absolute', left: '45%', top: '30%', width: 200, height: 200, opacity: 0.5, display: loading ? 'block' : 'none'}} />
         <Map reuseMaps mapLib={maplibregl} mapStyle={MAP_STYLE} preventStyleDiffing={true} />
       </DeckGL>
   );
