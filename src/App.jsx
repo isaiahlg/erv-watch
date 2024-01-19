@@ -221,7 +221,7 @@ export default function App() {
     data: EV_STATIONS_URL,
     opacity: 0.5,
     pointType: 'icon',
-    iconAtlas: '/ev-charge-icon.png',
+    iconAtlas: 'ev-charge-icon.png',
     iconMapping: {marker: {
       x: 0, 
       y: 0, 
@@ -244,7 +244,7 @@ export default function App() {
     data: PV_URL,
     opacity: 0.5,
     pointType: 'icon',
-    iconAtlas: '/pv.png',
+    iconAtlas: 'pv.png',
     iconMapping: {marker: {
       x: 0, 
       y: 0, 
@@ -267,7 +267,7 @@ export default function App() {
     data: STORAGE_URL,
     opacity: 0.5,
     pointType: 'icon',
-    iconAtlas: '/storage.png',
+    iconAtlas: 'storage.png',
     iconMapping: {marker: {
       x: 0, 
       y: 0, 
@@ -290,7 +290,7 @@ export default function App() {
     data: TX_URL,
     opacity: 0.5,
     pointType: 'icon',
-    iconAtlas: '/tx.png',
+    iconAtlas: 'tx.png',
     iconMapping: {marker: {
       x: 0, 
       y: 0, 
@@ -477,7 +477,7 @@ export default function App() {
           style = {infoButtonStyle(5.8)}> 
           {loading ? "Loading..." : times[timestep].time}
         </button>
-        <img src="/loading.gif" style={{position: 'absolute', left: '45%', top: '30%', width: 200, height: 200, opacity: 0.5, display: loading ? 'block' : 'none'}} />
+        <img src="loading.gif" style={{position: 'absolute', left: '45%', top: '30%', width: 200, height: 200, opacity: 0.5, display: loading ? 'block' : 'none'}} />
         <Map reuseMaps mapLib={maplibregl} mapStyle={MAP_STYLE} preventStyleDiffing={true} />
       </DeckGL>
   );
