@@ -6,8 +6,6 @@ import {GeoJsonLayer} from '@deck.gl/layers';
 import {csv} from 'd3-fetch';
 import {interpolateRdBu} from 'd3-scale-chromatic';
 
-const BUSES_URL = 'data/json/schools.geo.json';
-
 // style map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 const INITIAL_VIEW_STATE = {
@@ -28,40 +26,34 @@ export default function AppEV() {
   const [timestep, setTimestep] = useState(24);
   const [allLoads, setAllLoads] = useState([]);
   const [currentLoads, setCurrentLoads] = useState([]);
-  const [animate, setAnimate] = useState(false);
   
+  const [animate, setAnimate] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [speed, setSpeed] = useState(8);
+
   let hour = timestep % 24;
   let day = Math.floor(timestep / 24) % 7 + 1;
   
   // effect to fetch all data at the start of the app
   useEffect(() => { 
     const fetchData = async () => {
+      setLoading(true);
+
       const data = await csv('data/csv/hourly_load_timesteps.csv');
       console.log("Fetched the full load data: ", data)
       setAllLoads(data);
-    };
 
+      setLoading(false);
+    };
     fetchData();
   }, []);
 
-  // effect to animate the timestep
-  useEffect(() => {
-    if (animate) {
-      const interval = setInterval(() => {
-        setTimestep((timestep + 1) % 168)
-      }, 100)
-      return () => clearInterval(interval)
-    }
-  }, [animate, timestep])
-
   // effect to fetch loads for current timestep
   useEffect(() => {
-    console.log("New timestep: ", timestep)
     const getLoadsByTimestep = (timestep) => {
       return allLoads.filter((l) => +l.timestep === timestep);
     };
     setCurrentLoads(getLoadsByTimestep(timestep));
-    // console.log("Current loads: ", getLoadsByTimestep(timestep)) 
   }, [allLoads, timestep]);
   
   // function to update the timestep when buttons are clicked
@@ -69,9 +61,20 @@ export default function AppEV() {
     setTimestep(timestep + hours % 168);
   };
 
-  const busLayer = new GeoJsonLayer({
-    id: 'buses',
-    data: BUSES_URL,
+  // effect to animate the timestep
+  useEffect(() => {
+    if (animate) {
+      const interval = setInterval(() => {
+        setTimestep((timestep + 1) % 168)
+      }, 1000/speed)
+      return () => clearInterval(interval)
+    }
+  }, [animate, timestep, speed])
+
+  // layers
+  const glyphLayer = new GeoJsonLayer({
+    id: 'glyphs',
+    data: 'data/json/schools.geo.json',
     pointType: 'circle',
     radiusUnits: 'meters',
     getPointRadius: s => {
@@ -90,6 +93,7 @@ export default function AppEV() {
     visible: viewBuses
   })
 
+  // button styles
   const layerButtonStyle = (view, n) => {
     return ({
     position: 'absolute', 
@@ -97,6 +101,19 @@ export default function AppEV() {
     top: 5,
     color: 'white',
     backgroundColor: view ? 'blue' : 'gray',
+    border: 'none',
+    padding: '10px',
+    borderRadius: '10px',
+    boxShadow: '0px 0px 10px 0 rgba(255, 255, 255, 0.2)'
+  })};
+
+  const infoButtonStyle = (n) => {
+    return ({
+    position: 'absolute', 
+    right: 5 + 75*n, 
+    top: 5,
+    color: 'white',
+    backgroundColor: 'black',
     border: 'none',
     padding: '10px',
     borderRadius: '10px',
@@ -132,7 +149,7 @@ export default function AppEV() {
   return (
       <DeckGL
         layers={[
-          busLayer,
+          glyphLayer,
         ]}
         initialViewState={INITIAL_VIEW_STATE}
         controller={true}
@@ -141,7 +158,7 @@ export default function AppEV() {
         <button 
           onClick = {() => toggleBuses(!viewBuses)}
           style = {layerButtonStyle(viewBuses, 0.1)}> 
-          Buses
+          Glyphs
         </button>
         <button 
           onClick = {() => stepTime(1)}
@@ -157,11 +174,26 @@ export default function AppEV() {
          onClick = {() => stepTime(-1)}
           style = {skipButtonStyle(1.25)}> 
           ◄◄
+        </button>        
+        <button 
+         onClick = {() => setSpeed(speed === 1 ? speed : speed / 2)}
+          style = {skipButtonStyle(1.97)}> 
+          ▼
         </button>
         <button 
-          style = {playButtonStyle(2.2)}> 
+         onClick = {() => setSpeed(speed * 2)}
+          style = {skipButtonStyle(2.5)}> 
+          ▲
+        </button>
+        <button 
+          style = {infoButtonStyle(3.1)}> 
+          Speed: {speed}x
+        </button>
+        <button 
+          style = {infoButtonStyle(4.4)}> 
           Day: {day} Hour: {hour}
         </button>
+        <img src="loading.gif" style={{position: 'absolute', left: '45%', top: '30%', width: 200, height: 200, opacity: 0.5, display: loading ? 'block' : 'none'}} />
         <Map reuseMaps mapLib={maplibregl} mapStyle={MAP_STYLE} preventStyleDiffing={true} />
       </DeckGL>
   );
