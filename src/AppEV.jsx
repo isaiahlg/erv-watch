@@ -2,16 +2,18 @@ import {useEffect, useState} from 'react';
 import Map from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
 import DeckGL from '@deck.gl/react';
-import {GeoJsonLayer} from '@deck.gl/layers';
+import {GeoJsonLayer, ColumnLayer} from '@deck.gl/layers';
+import {H3HexagonLayer} from '@deck.gl/geo-layers';
+import {HexagonLayer, HeatmapLayer, GridLayer} from '@deck.gl/aggregation-layers';
 import {csv} from 'd3-fetch';
 import {interpolateRdBu} from 'd3-scale-chromatic';
 
 // style map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 const INITIAL_VIEW_STATE = {
-  latitude: 37.49,
-  longitude: -77.5,
-  zoom: 11,
+  latitude: 37.2,
+  longitude: -76.9,
+  zoom: 9.5,
   maxZoom: 20,
   pitch: 60,
   bearing: 0
@@ -22,14 +24,21 @@ const getTooltip = ({object}) => JSON.stringify(object);
 
 // primary component
 export default function AppEV() {
-  const [viewBuses, toggleBuses] = useState(true);
-  const [timestep, setTimestep] = useState(24);
+  const [viewPoints, togglePoints] = useState(true);
+  const [viewGlyphs, toggleGlyphs] = useState(false);
+  const [viewColumns, toggleColumns] = useState(false);
+  const [viewHex, toggleHex] = useState(false);
+  const [viewH3, toggleH3] = useState(false);
+  const [viewGrid, toggleGrid] = useState(false);
+  const [viewHeatmap, toggleHeatmap] = useState(true);
+
   const [allLoads, setAllLoads] = useState([]);
   const [currentLoads, setCurrentLoads] = useState([]);
   
-  const [animate, setAnimate] = useState(true);
+  const [timestep, setTimestep] = useState(24);
+  const [animate, setAnimate] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [speed, setSpeed] = useState(8);
+  const [speed, setSpeed] = useState(16);
 
   let hour = timestep % 24;
   let day = Math.floor(timestep / 24) % 7 + 1;
@@ -39,8 +48,8 @@ export default function AppEV() {
     const fetchData = async () => {
       setLoading(true);
 
-      const data = await csv('data/csv/hourly_load_timesteps.csv');
-      console.log("Fetched the full load data: ", data)
+      const data = await csv('data/evsatscale/hourly_load_timesteps.csv');
+      // console.log("Fetched the full load data: ", data)
       setAllLoads(data);
 
       setLoading(false);
@@ -72,14 +81,25 @@ export default function AppEV() {
   }, [animate, timestep, speed])
 
   // layers
+  const pointsLayer = new GeoJsonLayer({
+    id: 'pointss',
+    data: 'data/evsatscale/schools.geo.json',
+    pointType: 'circle',
+    radiusUnits: 'meters',
+    getPointRadius: 300,
+    getFillColor: [255, 255, 255],
+    getLineWidth: 0,
+    visible: viewPoints
+  })
+
   const glyphLayer = new GeoJsonLayer({
     id: 'glyphs',
-    data: 'data/json/schools.geo.json',
+    data: 'data/evsatscale/schools.geo.json',
     pointType: 'circle',
     radiusUnits: 'meters',
     getPointRadius: s => {
       var power = +currentLoads.find(d => +d.school_id === s.properties.ID).power
-      return power + 200
+      return 3 * (power + 100)
     },
     getFillColor: s => {
       var power = +currentLoads.find(d => +d.school_id === s.properties.ID).power
@@ -90,7 +110,175 @@ export default function AppEV() {
       getPointRadius: currentLoads,
     },
     getLineWidth: 0,
-    visible: viewBuses
+    visible: viewGlyphs
+  })
+
+  const columnLayer = new ColumnLayer({
+    id: 'column-layer',
+    data: 'data/evsatscale/schools.json',
+    opacity: 0.9,
+    diskResolution: 24,
+    radius: 500,
+    extruded: true,
+    pickable: true,
+    elevationScale: 10,
+    getPosition: d => d.geometry.coordinates,
+    getFillColor: s => {
+      var power = +currentLoads.find(d => +d.school_id === s.ID).power
+      // console.log(power);
+      return RDBU_COLOR_SCALE(1-power/800)
+    },
+    getElevation: s => {
+      var power = +currentLoads.find(d => +d.school_id === s.ID).power
+      return power
+    },
+    updateTriggers: {
+      getFillColor: currentLoads,
+      getElevation: currentLoads,
+    },
+    getLineWidth: 0,
+    visible: viewColumns
+  })
+
+  const hexLayer = new HexagonLayer({
+    id: 'hex',
+    data: 'data/evsatscale/schools.json',
+    opacity: 0.9,
+    filled: true,
+    extruded: true,
+    radius: 3000,
+    elevationDomain: [0, 1000],
+    elevationScale: 10,
+    getElevationWeight: point => {
+      var power = +currentLoads.find(d => +d.school_id === point.ID).power;
+      return power;
+    },
+    elevationAggregation: 'SUM',
+    colorDomain: [0, 1000],
+    colorRange: [
+      [5,48,97],
+      [33,102,172],
+      [67,147,195],
+      [146,197,222],
+      [209,229,240],
+      [247,247,247],
+      [253,219,199],
+      [244,165,130],
+      [214,96,77],
+      [178,24,43],
+      [103,0,31]
+  ],
+    getColorWeight: point => {
+      var power = +currentLoads.find(d => +d.school_id === point.ID).power;
+      // console.log(power);
+      return power;
+    },
+    colorAggregation: 'SUM',
+    getPosition: d => {
+      var coord = d.geometry.coordinates;
+      return coord
+    },
+    updateTriggers: {
+      getColorWeight: currentLoads,
+      getElevationValue: currentLoads,
+    },
+    getLineWidth: 0,
+    visible: viewHex
+  })
+
+  const h3Layer = new H3HexagonLayer({
+    id: 'h3',
+    data: 'data/evsatscale/schools_h3.json',
+    opacity: 0.1,
+    filled: true,
+    extruded: false,
+    getHexagon: d => {
+      var h3 = d.h3r7;
+      return h3
+    },
+    getFillColor: [255, 255, 255],
+    getLineWidth: 0,
+    visible: viewH3
+  })
+
+  const gridLayer = new GridLayer({
+    id: 'grid',
+    data: 'data/evsatscale/schools.json',
+    opacity: 0.9,
+    filled: true,
+    extruded: true,
+    cellSize: 5000,
+    elevationDomain: [0, 1000],
+    elevationScale: 10,
+    getElevationWeight: point => {
+      var power = +currentLoads.find(d => +d.school_id === point.ID).power;
+      return power;
+    },
+    elevationAggregation: 'SUM',
+    colorDomain: [0, 1000],
+    colorRange: [
+      [5,48,97],
+      [33,102,172],
+      [67,147,195],
+      [146,197,222],
+      [209,229,240],
+      [247,247,247],
+      [253,219,199],
+      [244,165,130],
+      [214,96,77],
+      [178,24,43],
+      [103,0,31]
+  ],
+    getColorWeight: point => {
+      var power = +currentLoads.find(d => +d.school_id === point.ID).power;
+      return power;
+    },
+    colorAggregation: 'SUM',
+    getPosition: d => {
+      var coord = d.geometry.coordinates;
+      return coord
+    },
+    updateTriggers: {
+      getColorWeight: currentLoads,
+      getElevationValue: currentLoads,
+    },
+    getLineWidth: 0,
+    visible: viewGrid
+  })
+
+  const heatmapLayer = new HeatmapLayer({
+    id: 'heatmap',
+    data: 'data/evsatscale/schools.json',
+    radiusPixels: 150,
+    colorRange: [
+      [5,48,97],
+      [33,102,172],
+      [67,147,195],
+      [146,197,222],
+      [209,229,240],
+      [247,247,247],
+      [253,219,199],
+      [244,165,130],
+      [214,96,77],
+      [178,24,43],
+      [103,0,31]
+    ],
+    intensity: 1,
+    colorDomain: [0.1, 5],
+    weightsTextureSize: 256,
+    getPosition: d => {
+      var coord = d.geometry.coordinates;
+      return coord
+    },
+    getWeight: s => {
+      var power = +currentLoads.find(d => +d.school_id === s.ID).power;
+      return power;
+    },
+    aggregation: 'SUM',
+    updateTriggers: {
+      getWeight: currentLoads,
+    },
+    visible: viewHeatmap
   })
 
   // button styles
@@ -149,16 +337,52 @@ export default function AppEV() {
   return (
       <DeckGL
         layers={[
+          columnLayer,
+          hexLayer,
+          h3Layer,
+          gridLayer,
+          heatmapLayer,
           glyphLayer,
+          pointsLayer
         ]}
         initialViewState={INITIAL_VIEW_STATE}
         controller={true}
         getTooltip={getTooltip}
       >
         <button 
-          onClick = {() => toggleBuses(!viewBuses)}
-          style = {layerButtonStyle(viewBuses, 0.1)}> 
+          onClick = {() => togglePoints(!viewPoints)}
+          style = {layerButtonStyle(viewPoints, 0.1)}> 
+          Points
+        </button>
+        <button 
+          onClick = {() => toggleGlyphs(!viewGlyphs)}
+          style = {layerButtonStyle(viewGlyphs, 1)}> 
           Glyphs
+        </button>
+        <button 
+          onClick = {() => toggleColumns(!viewColumns)}
+          style = {layerButtonStyle(viewColumns, 2)}> 
+          Columns
+        </button>
+        <button 
+          onClick = {() => toggleHex(!viewHex)}
+          style = {layerButtonStyle(viewHex, 3.1)}> 
+          Hex
+        </button>
+        <button 
+          onClick = {() => toggleH3(!viewH3)}
+          style = {layerButtonStyle(viewH3, 3.8)}> 
+          H3
+        </button>
+        <button 
+          onClick = {() => toggleGrid(!viewGrid)}
+          style = {layerButtonStyle(viewGrid, 4.4)}> 
+          Grid
+        </button>
+        <button 
+          onClick = {() => toggleHeatmap(!viewHeatmap)}
+          style = {layerButtonStyle(viewHeatmap, 5.1)}> 
+          Heatmap
         </button>
         <button 
           onClick = {() => stepTime(1)}
@@ -191,7 +415,11 @@ export default function AppEV() {
         </button>
         <button 
           style = {infoButtonStyle(4.4)}> 
-          Day: {day} Hour: {hour}
+          Day: {day} 
+        </button>
+        <button 
+          style = {infoButtonStyle(5.3)}> 
+          Hour: {hour}
         </button>
         <img src="loading.gif" style={{position: 'absolute', left: '45%', top: '30%', width: 200, height: 200, opacity: 0.5, display: loading ? 'block' : 'none'}} />
         <Map reuseMaps mapLib={maplibregl} mapStyle={MAP_STYLE} preventStyleDiffing={true} />
