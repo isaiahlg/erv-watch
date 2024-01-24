@@ -36,7 +36,7 @@ export default function AppEV() {
   const [currentLoads, setCurrentLoads] = useState([]);
   
   const [timestep, setTimestep] = useState(24);
-  const [animate, setAnimate] = useState(false);
+  const [animate, setAnimate] = useState(true);
   const [loading, setLoading] = useState(true);
   const [speed, setSpeed] = useState(16);
 
@@ -48,7 +48,7 @@ export default function AppEV() {
     const fetchData = async () => {
       setLoading(true);
 
-      const data = await csv('data/evsatscale/hourly_load_timesteps.csv');
+      const data = await csv('https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/evsatscale/hourly_load_timesteps.csv');
       // console.log("Fetched the full load data: ", data)
       setAllLoads(data);
 
@@ -83,7 +83,7 @@ export default function AppEV() {
   // layers
   const pointsLayer = new GeoJsonLayer({
     id: 'pointss',
-    data: 'data/evsatscale/schools.geo.json',
+    data: 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/evsatscale/schools.geo.json',
     pointType: 'circle',
     radiusUnits: 'meters',
     getPointRadius: 300,
@@ -94,7 +94,7 @@ export default function AppEV() {
 
   const glyphLayer = new GeoJsonLayer({
     id: 'glyphs',
-    data: 'data/evsatscale/schools.geo.json',
+    data: 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/evsatscale/schools.geo.json',
     pointType: 'circle',
     radiusUnits: 'meters',
     getPointRadius: s => {
@@ -115,7 +115,7 @@ export default function AppEV() {
 
   const columnLayer = new ColumnLayer({
     id: 'column-layer',
-    data: 'data/evsatscale/schools.json',
+    data: 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/evsatscale/schools.json',
     opacity: 0.9,
     diskResolution: 24,
     radius: 500,
@@ -142,7 +142,7 @@ export default function AppEV() {
 
   const hexLayer = new HexagonLayer({
     id: 'hex',
-    data: 'data/evsatscale/schools.json',
+    data: 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/evsatscale/schools.json',
     opacity: 0.9,
     filled: true,
     extruded: true,
@@ -188,7 +188,7 @@ export default function AppEV() {
 
   const h3Layer = new H3HexagonLayer({
     id: 'h3',
-    data: 'data/evsatscale/schools_h3.json',
+    data: 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/evsatscale/schools_h3.json',
     opacity: 0.1,
     filled: true,
     extruded: false,
@@ -203,7 +203,7 @@ export default function AppEV() {
 
   const gridLayer = new GridLayer({
     id: 'grid',
-    data: 'data/evsatscale/schools.json',
+    data: 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/evsatscale/schools.json',
     opacity: 0.9,
     filled: true,
     extruded: true,
@@ -248,7 +248,7 @@ export default function AppEV() {
 
   const heatmapLayer = new HeatmapLayer({
     id: 'heatmap',
-    data: 'data/evsatscale/schools.json',
+    data: 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/evsatscale/schools.json',
     radiusPixels: 150,
     colorRange: [
       [5,48,97],
