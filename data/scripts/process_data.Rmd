@@ -1,0 +1,68 @@
+# Process Data from CSV to GeoJSON
+
+## Load Libraries
+```{r}
+library(tidyverse)
+library(sf)
+library(jsonlite)
+```
+
+## Set Constants
+```{r}
+# set constants`
+data_path <- "data/evsatscale/v2/"
+locations_filename <- "charge_location_data"
+load_filename <- "interval_data_hourly_kwh"
+```
+
+## Convert Load Locations from CSV to GeoJSON & JSON
+```{r}
+# Read in CSV file
+locations.df <- read.csv(paste(data_path, locations_filename, ".csv", sep = ""))
+
+# convert locations into sf
+locations.sf <- st_as_sf(locations.df, coords = c("lon", "lat"), crs = 4326)
+
+# create an ID column with integers
+locations.sf$ID <- 1:nrow(locations.sf)
+
+# write to geojson
+st_write(locations.sf, paste(data_path, locations_filename, ".geo.json", sep = ""), driver = "GeoJSON")
+# write as json
+write_json(locations.sf, paste(data_path, locations_filename, ".json", sep = ""))
+```
+
+## Prepare the Load Data
+```{r}
+# read in csv
+loads.df <- read.csv(paste(data_path, load_filename, ".csv", sep = ""))
+
+# extract the timesteps
+timesteps <- unique(loads.df$Timestep)
+# sort timesteps ascending
+timesteps <- sort(timesteps)
+# convert to a dataframe
+timesteps <- data.frame(timesteps)
+# assign a unique integer to each timestep
+timesteps$int <- 1:nrow(timesteps)
+
+# replace the loads.df$Timestep with the integer values from timesteps
+loads.df$Timestep <- timesteps$int[match(loads.df$Timestep, timesteps$timesteps)]
+
+# replace the Location_ID with the integer values from locations.sf$ID
+loads.df$Location_ID <- locations.sf$ID[match(loads.df$Location_ID, locations.sf$Location_ID)]
+
+# create a pivot table with timestep as rows and Location_ID as columns and kWh as values
+loads.pivot.df <- pivot_wider(loads.df, names_from = Location_ID, values_from = kWh)
+
+# export timesteps as csv
+write.csv(timesteps, paste(data_path, "timesteps.csv", sep = ""), row.names = FALSE)
+
+# export pivot table as csv
+write.csv(loads.pivot.df, paste(data_path, "loads_pivot.csv", sep = ""), row.names = FALSE)
+```
+
+
+# export df as csv
+# write.csv(df, "evsatscale/power_pivot.csv", row.names = FALSE)
+```

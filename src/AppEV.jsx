@@ -8,6 +8,15 @@ import {HexagonLayer, HeatmapLayer, GridLayer} from '@deck.gl/aggregation-layers
 import {csv} from 'd3-fetch';
 import {interpolateRdBu} from 'd3-scale-chromatic';
 
+// data imports
+const DATA_PATH = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/evsatscale/v2/';
+// const DATA_PATH = 'data/evsatscale/v2/';
+const HOURLY_LOADS = 'loads_pivot.csv';
+const LOADS_GEO_JSON = 'charge_location_data.geo.json';
+const LOADS_JSON = 'charge_location_data.json';
+const LOADS_H3 = 'charge_location_data.json';
+const DATETIMES = 'timesteps.csv';
+
 // style map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 const INITIAL_VIEW_STATE = {
@@ -25,7 +34,7 @@ const getTooltip = ({object}) => JSON.stringify(object);
 // primary component
 export default function AppEV() {
   const [viewPoints, togglePoints] = useState(true);
-  const [viewGlyphs, toggleGlyphs] = useState(false);
+  const [viewGlyphs, toggleGlyphs] = useState(true);
   const [viewColumns, toggleColumns] = useState(false);
   const [viewHex, toggleHex] = useState(false);
   const [viewH3, toggleH3] = useState(false);
@@ -34,9 +43,9 @@ export default function AppEV() {
 
   const [allLoads, setAllLoads] = useState([]);
   const [currentLoads, setCurrentLoads] = useState([]);
-  
+  const [datetimes, setDatetimes] = useState([]);
   const [timestep, setTimestep] = useState(24);
-  const [animate, setAnimate] = useState(true);
+  const [animate, setAnimate] = useState(false);
   const [loading, setLoading] = useState(true);
   const [speed, setSpeed] = useState(16);
 
@@ -48,9 +57,10 @@ export default function AppEV() {
     const fetchData = async () => {
       setLoading(true);
 
-      const data = await csv('https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/evsatscale/hourly_load_timesteps.csv');
-      // console.log("Fetched the full load data: ", data)
+      const data = await csv(DATA_PATH + HOURLY_LOADS);
+      const datetimes_data = await csv(DATA_PATH + DATETIMES);
       setAllLoads(data);
+      setDatetimes(datetimes_data);
 
       setLoading(false);
     };
@@ -60,14 +70,17 @@ export default function AppEV() {
   // effect to fetch loads for current timestep
   useEffect(() => {
     const getLoadsByTimestep = (timestep) => {
-      return allLoads.filter((l) => +l.timestep === timestep);
+      return allLoads[timestep]; // timesteps are 1 indexed, JS is 0 indexed
     };
     setCurrentLoads(getLoadsByTimestep(timestep));
   }, [allLoads, timestep]);
   
   // function to update the timestep when buttons are clicked
   const stepTime = (hours) => {
-    setTimestep(timestep + hours % 168);
+    const mod = datetimes.length;
+    const new_timestep = (timestep + hours) % mod;
+    const new_positive_timestep = (new_timestep + mod) % mod
+    setTimestep(new_positive_timestep);
   };
 
   // effect to animate the timestep
@@ -82,11 +95,11 @@ export default function AppEV() {
 
   // layers
   const pointsLayer = new GeoJsonLayer({
-    id: 'pointss',
-    data: 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/evsatscale/schools.geo.json',
+    id: 'points',
+    data: DATA_PATH + LOADS_GEO_JSON,
     pointType: 'circle',
     radiusUnits: 'meters',
-    getPointRadius: 300,
+    getPointRadius: 200,
     getFillColor: [255, 255, 255],
     getLineWidth: 0,
     visible: viewPoints
@@ -94,16 +107,16 @@ export default function AppEV() {
 
   const glyphLayer = new GeoJsonLayer({
     id: 'glyphs',
-    data: 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/evsatscale/schools.geo.json',
+    data: DATA_PATH + LOADS_GEO_JSON,
     pointType: 'circle',
     radiusUnits: 'meters',
     getPointRadius: s => {
-      var power = +currentLoads.find(d => +d.school_id === s.properties.ID).power
-      return 3 * (power + 100)
+      var load = +currentLoads[s.properties.ID];
+      return 3 * (load + 100)
     },
     getFillColor: s => {
-      var power = +currentLoads.find(d => +d.school_id === s.properties.ID).power
-      return RDBU_COLOR_SCALE(1-power/800)
+      var load = +currentLoads[s.properties.ID];
+      return RDBU_COLOR_SCALE(1-load/800)
     },
     updateTriggers: {
       getFillColor: currentLoads,
@@ -115,7 +128,7 @@ export default function AppEV() {
 
   const columnLayer = new ColumnLayer({
     id: 'column-layer',
-    data: 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/evsatscale/schools.json',
+    data: DATA_PATH + LOADS_JSON,
     opacity: 0.9,
     diskResolution: 24,
     radius: 500,
@@ -124,13 +137,12 @@ export default function AppEV() {
     elevationScale: 10,
     getPosition: d => d.geometry.coordinates,
     getFillColor: s => {
-      var power = +currentLoads.find(d => +d.school_id === s.ID).power
-      // console.log(power);
-      return RDBU_COLOR_SCALE(1-power/800)
+      var load = +currentLoads[s.ID];
+      return RDBU_COLOR_SCALE(1-load/800)
     },
     getElevation: s => {
-      var power = +currentLoads.find(d => +d.school_id === s.ID).power
-      return power
+      var load = +currentLoads[s.ID];
+      return load
     },
     updateTriggers: {
       getFillColor: currentLoads,
@@ -142,16 +154,16 @@ export default function AppEV() {
 
   const hexLayer = new HexagonLayer({
     id: 'hex',
-    data: 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/evsatscale/schools.json',
+    data: DATA_PATH + LOADS_JSON,
     opacity: 0.9,
     filled: true,
     extruded: true,
     radius: 3000,
     elevationDomain: [0, 1000],
     elevationScale: 10,
-    getElevationWeight: point => {
-      var power = +currentLoads.find(d => +d.school_id === point.ID).power;
-      return power;
+    getElevationWeight: s => {
+      var load = +currentLoads[s.ID];
+      return load;
     },
     elevationAggregation: 'SUM',
     colorDomain: [0, 1000],
@@ -168,10 +180,9 @@ export default function AppEV() {
       [178,24,43],
       [103,0,31]
   ],
-    getColorWeight: point => {
-      var power = +currentLoads.find(d => +d.school_id === point.ID).power;
-      // console.log(power);
-      return power;
+    getColorWeight: s => {
+      var load = +currentLoads[s.ID];
+      return load;
     },
     colorAggregation: 'SUM',
     getPosition: d => {
@@ -188,7 +199,7 @@ export default function AppEV() {
 
   const h3Layer = new H3HexagonLayer({
     id: 'h3',
-    data: 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/evsatscale/schools_h3.json',
+    data: DATA_PATH + LOADS_H3,
     opacity: 0.1,
     filled: true,
     extruded: false,
@@ -203,16 +214,16 @@ export default function AppEV() {
 
   const gridLayer = new GridLayer({
     id: 'grid',
-    data: 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/evsatscale/schools.json',
+    data: DATA_PATH + LOADS_JSON,
     opacity: 0.9,
     filled: true,
     extruded: true,
     cellSize: 5000,
     elevationDomain: [0, 1000],
     elevationScale: 10,
-    getElevationWeight: point => {
-      var power = +currentLoads.find(d => +d.school_id === point.ID).power;
-      return power;
+    getElevationWeight: s => {
+      var load = +currentLoads[s.ID];
+      return load;
     },
     elevationAggregation: 'SUM',
     colorDomain: [0, 1000],
@@ -229,9 +240,9 @@ export default function AppEV() {
       [178,24,43],
       [103,0,31]
   ],
-    getColorWeight: point => {
-      var power = +currentLoads.find(d => +d.school_id === point.ID).power;
-      return power;
+    getColorWeight: s => {
+      var load = +currentLoads[s.ID];
+      return load;
     },
     colorAggregation: 'SUM',
     getPosition: d => {
@@ -248,7 +259,7 @@ export default function AppEV() {
 
   const heatmapLayer = new HeatmapLayer({
     id: 'heatmap',
-    data: 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/evsatscale/schools.json',
+    data: DATA_PATH + LOADS_JSON,
     radiusPixels: 150,
     colorRange: [
       [5,48,97],
@@ -271,8 +282,8 @@ export default function AppEV() {
       return coord
     },
     getWeight: s => {
-      var power = +currentLoads.find(d => +d.school_id === s.ID).power;
-      return power;
+      var load = +currentLoads[s.ID];;
+      return load;
     },
     aggregation: 'SUM',
     updateTriggers: {
