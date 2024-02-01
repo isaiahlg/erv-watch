@@ -9,8 +9,8 @@ import {csv} from 'd3-fetch';
 import {interpolateRdBu} from 'd3-scale-chromatic';
 
 // data imports
-const DATA_PATH = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/evsatscale/v2/';
-// const DATA_PATH = 'data/evsatscale/v2/';
+// const DATA_PATH = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/evsatscale/v2/';
+const DATA_PATH = 'data/evsatscale/v2/';
 const HOURLY_LOADS = 'loads_pivot.csv';
 const LOADS_GEO_JSON = 'charge_location_data.geo.json';
 const LOADS_JSON = 'charge_location_data.json';
@@ -56,12 +56,10 @@ export default function AppEV() {
   useEffect(() => { 
     const fetchData = async () => {
       setLoading(true);
-
       const data = await csv(DATA_PATH + HOURLY_LOADS);
       const datetimes_data = await csv(DATA_PATH + DATETIMES);
       setAllLoads(data);
       setDatetimes(datetimes_data);
-
       setLoading(false);
     };
     fetchData();
@@ -111,10 +109,12 @@ export default function AppEV() {
     pointType: 'circle',
     radiusUnits: 'meters',
     getPointRadius: s => {
+      if (loading) {return 0}
       var load = +currentLoads[s.properties.ID];
       return 3 * (load + 100)
     },
     getFillColor: s => {
+      if (loading) {return RDBU_COLOR_SCALE(1)}
       var load = +currentLoads[s.properties.ID];
       return RDBU_COLOR_SCALE(1-load/800)
     },
@@ -137,10 +137,12 @@ export default function AppEV() {
     elevationScale: 10,
     getPosition: d => d.geometry.coordinates,
     getFillColor: s => {
+      if (loading) {return RDBU_COLOR_SCALE(1)}
       var load = +currentLoads[s.ID];
       return RDBU_COLOR_SCALE(1-load/800)
     },
     getElevation: s => {
+      if (loading) {return 0}
       var load = +currentLoads[s.ID];
       return load
     },
@@ -162,6 +164,7 @@ export default function AppEV() {
     elevationDomain: [0, 1000],
     elevationScale: 10,
     getElevationWeight: s => {
+      if (loading) {return 0}
       var load = +currentLoads[s.ID];
       return load;
     },
@@ -181,6 +184,7 @@ export default function AppEV() {
       [103,0,31]
   ],
     getColorWeight: s => {
+      if (loading) {return 0}
       var load = +currentLoads[s.ID];
       return load;
     },
@@ -222,6 +226,7 @@ export default function AppEV() {
     elevationDomain: [0, 1000],
     elevationScale: 10,
     getElevationWeight: s => {
+      if (loading) {return 0}
       var load = +currentLoads[s.ID];
       return load;
     },
@@ -241,6 +246,7 @@ export default function AppEV() {
       [103,0,31]
   ],
     getColorWeight: s => {
+      if (loading) {return 0}
       var load = +currentLoads[s.ID];
       return load;
     },
@@ -282,6 +288,7 @@ export default function AppEV() {
       return coord
     },
     getWeight: s => {
+      if (loading) {return 0}
       var load = +currentLoads[s.ID];;
       return load;
     },
