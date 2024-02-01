@@ -9,7 +9,7 @@ import {csv} from 'd3-fetch';
 import {interpolateRdBu} from 'd3-scale-chromatic';
 
 // data imports
-// const DATA_PATH = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/evsatscale/v2/';
+// const DATA_PATH = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/evsatscale2/data/evsatscale/v2/';
 const DATA_PATH = 'data/evsatscale/v2/';
 const HOURLY_LOADS = 'loads_pivot.csv';
 const LOADS_GEO_JSON = 'charge_location_data.geo.json';
