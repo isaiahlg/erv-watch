@@ -5,6 +5,7 @@
 library(tidyverse)
 library(sf)
 library(jsonlite)
+library(h3jsr)
 ```
 
 ## Set Constants
@@ -25,6 +26,9 @@ locations.sf <- st_as_sf(locations.df, coords = c("lon", "lat"), crs = 4326)
 
 # create an ID column with integers
 locations.sf$ID <- 1:nrow(locations.sf)
+
+# save as RDS
+saveRDS(locations.sf, paste(data_path, locations_filename, ".rds", sep = ""))
 
 # write to geojson
 st_write(locations.sf, paste(data_path, locations_filename, ".geo.json", sep = ""), driver = "GeoJSON")
@@ -62,7 +66,45 @@ write.csv(timesteps, paste(data_path, "timesteps.csv", sep = ""), row.names = FA
 write.csv(loads.pivot.df, paste(data_path, "loads_pivot.csv", sep = ""), row.names = FALSE)
 ```
 
+## H3
+```{r}
+# read in the locations.sf RDS file
+locations.sf <- readRDS(paste(data_path, locations_filename, ".rds", sep = ""))
 
-# export df as csv
-# write.csv(df, "evsatscale/power_pivot.csv", row.names = FALSE)
+min_res = 1
+max_res = 8
+
+# create a for loop that iteratees with i from 1 to 9
+# at each iteration, get the h3 resolution for each location
+# then group by the h3 resolution and calculate the sum of load, the mean of load, the count of locations, the standard deviation of load, and the resolution
+# rename the h3r1 to h3
+# convert from sf to df
+# drop the geometry column
+# export to json
+
+locations.h3.df <- data.frame()
+
+# create an empty dataframe
+for (i in min_res:max_res) {
+  print(i)
+  colname <- paste("h3r", i, sep = "")
+  locations.sf <- locations.sf %>% mutate(!!colname := point_to_cell(geometry, res = i, simple = TRUE))
+  locations.h3 <- locations.sf %>% group_by(!!sym(colname)) %>% summarise(
+    sum = sum(ID),
+    count = n(),
+    res = i
+  ) %>% rename(h3 = !!sym(colname))
+  # convert from sf to df
+  locations.h3 <- as.data.frame(locations.h3)
+  # drop the geometry column
+  locations.h3 <- locations.h3 %>% select(-geometry)
+  # combine it with the dataframe from previous iterations
+  locations.h3.df <- rbind(locations.h3.df, locations.h3)
+}
+
+# export to json
+write_json(locations.h3.df, paste(data_path, "locations_h3.json", sep = ""))
+
+
 ```
+

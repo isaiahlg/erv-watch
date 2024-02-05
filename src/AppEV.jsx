@@ -14,18 +14,18 @@ const DATA_PATH = 'data/evsatscale/v2/';
 const HOURLY_LOADS = 'loads_pivot.csv';
 const LOADS_GEO_JSON = 'charge_location_data.geo.json';
 const LOADS_JSON = 'charge_location_data.json';
-const LOADS_H3 = 'charge_location_data.json';
+const LOADS_H3 = 'locations_h3.json';
 const DATETIMES = 'timesteps.csv';
 
 // style map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 const INITIAL_VIEW_STATE = {
-  latitude: 37.2,
-  longitude: -76.9,
-  zoom: 9.5,
+  latitude: 37.5,
+  longitude: -77.2,
+  zoom: 9.8,
   maxZoom: 20,
   pitch: 60,
-  bearing: 0
+  bearing: 170
 };
 const toRGBArray = rgbStr => rgbStr.match(/\d+/g).map(Number);
 const RDBU_COLOR_SCALE = v => toRGBArray(interpolateRdBu(v));
@@ -34,20 +34,21 @@ const getTooltip = ({object}) => JSON.stringify(object);
 // primary component
 export default function AppEV() {
   const [viewPoints, togglePoints] = useState(true);
-  const [viewGlyphs, toggleGlyphs] = useState(true);
+  const [viewGlyphs, toggleGlyphs] = useState(false);
   const [viewColumns, toggleColumns] = useState(false);
-  const [viewHex, toggleHex] = useState(false);
+  const [viewHex, toggleHex] = useState(true);
   const [viewH3, toggleH3] = useState(false);
   const [viewGrid, toggleGrid] = useState(false);
-  const [viewHeatmap, toggleHeatmap] = useState(true);
+  const [viewHeatmap, toggleHeatmap] = useState(false);
 
+  const [h3res, setH3res] = useState(7);
   const [allLoads, setAllLoads] = useState([]);
   const [currentLoads, setCurrentLoads] = useState([]);
   const [datetimes, setDatetimes] = useState([]);
-  const [timestep, setTimestep] = useState(24);
+  const [timestep, setTimestep] = useState(44);
   const [animate, setAnimate] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [speed, setSpeed] = useState(16);
+  const [speed, setSpeed] = useState(8);
 
   let hour = timestep % 24;
   let day = Math.floor(timestep / 24) % 7 + 1;
@@ -56,9 +57,9 @@ export default function AppEV() {
   useEffect(() => { 
     const fetchData = async () => {
       setLoading(true);
-      const data = await csv(DATA_PATH + HOURLY_LOADS);
+      const load_data = await csv(DATA_PATH + HOURLY_LOADS);
       const datetimes_data = await csv(DATA_PATH + DATETIMES);
-      setAllLoads(data);
+      setAllLoads(load_data);
       setDatetimes(datetimes_data);
       setLoading(false);
     };
@@ -160,7 +161,7 @@ export default function AppEV() {
     opacity: 0.9,
     filled: true,
     extruded: true,
-    radius: 3000,
+    radius: 150*(3**(9-h3res)),
     elevationDomain: [0, 1000],
     elevationScale: 10,
     getElevationWeight: s => {
@@ -194,6 +195,7 @@ export default function AppEV() {
       return coord
     },
     updateTriggers: {
+      getPosition: [currentLoads, h3res],
       getColorWeight: currentLoads,
       getElevationValue: currentLoads,
     },
@@ -204,16 +206,31 @@ export default function AppEV() {
   const h3Layer = new H3HexagonLayer({
     id: 'h3',
     data: DATA_PATH + LOADS_H3,
-    opacity: 0.1,
+    pickable: true,
+    wireframe: false,
     filled: true,
-    extruded: false,
+    extruded: true,
     getHexagon: d => {
-      var h3 = d.h3r7;
-      return h3
+      if (loading) {return null}
+      if (d.res == h3res) {
+        return d.h3
+      }
+      return null
     },
-    getFillColor: [255, 255, 255],
-    getLineWidth: 0,
-    visible: viewH3
+    getFillColor: d => {
+      var load = d.sum / d.count
+      return RDBU_COLOR_SCALE(1-load/5000)
+    },
+    getElevation: d => {
+      var load = d.sum / d.count
+      return load
+    },
+    updateTriggers: {
+      getHexagon: [currentLoads, h3res],
+      getFillColor: currentLoads,
+      getElevation: currentLoads,
+    },
+    visible: viewH3,
   })
 
   const gridLayer = new GridLayer({
@@ -222,7 +239,7 @@ export default function AppEV() {
     opacity: 0.9,
     filled: true,
     extruded: true,
-    cellSize: 5000,
+    cellSize: 250*(3**(9-h3res)),
     elevationDomain: [0, 1000],
     elevationScale: 10,
     getElevationWeight: s => {
@@ -256,6 +273,7 @@ export default function AppEV() {
       return coord
     },
     updateTriggers: {
+      getPosition: [currentLoads, h3res], 
       getColorWeight: currentLoads,
       getElevationValue: currentLoads,
     },
@@ -438,6 +456,20 @@ export default function AppEV() {
         <button 
           style = {infoButtonStyle(5.3)}> 
           Hour: {hour}
+        </button>
+        <button
+          style = {infoButtonStyle(6.3)}>
+          Res: {h3res}
+        </button>
+        <button 
+         onClick = {() => setH3res(h3res < 8 ? h3res + 1 : h3res)}
+          style = {skipButtonStyle(7.2)}> 
+          ►
+        </button>
+        <button 
+         onClick = {() => setH3res(h3res > 1 ? h3res - 1 : h3res)}
+          style = {skipButtonStyle(7.7)}> 
+          ◄
         </button>
         <img src="loading.gif" style={{position: 'absolute', left: '45%', top: '30%', width: 200, height: 200, opacity: 0.5, display: loading ? 'block' : 'none'}} />
         <Map reuseMaps mapLib={maplibregl} mapStyle={MAP_STYLE} preventStyleDiffing={true} />
