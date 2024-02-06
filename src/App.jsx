@@ -8,23 +8,28 @@ import {GridLayer} from '@deck.gl/aggregation-layers';
 import {interpolateRdBu, interpolateRdPu} from 'd3-scale-chromatic';
 import {csv} from 'd3-fetch';
 
-const LINES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/lines.geo.json';
-const BUSES_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/buses.geo.json';
-const H3_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/h3r10.json';
-const S2_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/s2r17.json';
-const VORONOI_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/voronoi.geo.json';
-const CONTOUR_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/contours.json'
-const EV_STATIONS_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/evstations.geo.json'
-const PV_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/pv.geo.json'
-const STORAGE_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/storage.geo.json'
-const TX_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/json/tx.geo.json'
+
+// const DATA_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/';
+const DATA_URL = 'data/';
+const LINES_URL = DATA_URL + 'json/lines.geo.json';
+const BUSES_URL = DATA_URL + 'json/buses.geo.json';
+const H3_URL = DATA_URL + 'json/h3r10.json';
+const S2_URL = DATA_URL + 'json/s2r17.json';
+const VORONOI_URL = DATA_URL + 'json/voronoi.geo.json';
+const CONTOUR_URL = DATA_URL + 'json/contours.json'
+const EV_STATIONS_URL = DATA_URL + 'json/evstations.geo.json'
+const PV_URL = DATA_URL + 'json/pv.geo.json'
+const STORAGE_URL = DATA_URL + 'json/storage.geo.json'
+const TX_URL = DATA_URL + 'json/tx.geo.json'
+const BUS_VOLTAGE_URL = DATA_URL + 'csv/bus_voltages_all.csv';
+const TIMESTEPS_URL = DATA_URL + 'csv/time_steps.csv';
 
 // style map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 const INITIAL_VIEW_STATE = {
   latitude: 37.817,
   longitude: -122.242,
-  zoom: 16,
+  zoom: 15.3,
   maxZoom: 20,
   pitch: 60,
   bearing: 0
@@ -53,10 +58,10 @@ export default function App() {
   
   const [timestep, setTimestep] = useState(0);
   const [allVoltages, setAllVoltages] = useState([]);
-  const [times, setTimes] = useState([]);
+  const [datetimes, setDatetimes] = useState([]);
   const [currentVoltages, setCurrentVoltages] = useState([]);
   
-  const [animate, setAnimate] = useState(true);
+  const [animate, setAnimate] = useState(false);
   const [loading, setLoading] = useState(true);
   const [speed, setSpeed] = useState(8);
 
@@ -64,15 +69,13 @@ export default function App() {
   useEffect(() => { 
     const fetchData = async () => {
       setLoading(true);
-      // const data = await csv('/data/csv/bus_voltages_all.csv');
-      const data = await csv('https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/csv/bus_voltages_all.csv');
-      console.log("Fetched the full voltage data: ", data)
-      setAllVoltages(data);
+      const v = await csv(BUS_VOLTAGE_URL);
+      console.log("Fetched the full voltage data: ", v)
+      setAllVoltages(v);
 
-      // const t = await csv('/data/csv/time_steps.csv');
-      const t = await csv('https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/csv/time_steps.csv');
+      const t = await csv(TIMESTEPS_URL);
       console.log("Fetched timesteps", t)
-      setTimes(t);
+      setDatetimes(t);
       setLoading(false);
     };
     fetchData();
@@ -87,10 +90,13 @@ export default function App() {
   }, [allVoltages, timestep]);
   
   // function to update the timestep when buttons are clicked
-  const stepTime = (steps) => {
-    setTimestep(timestep + steps % 288);
+  const stepTime = (hours) => {
+    const mod = datetimes.length;
+    const new_timestep = (timestep + hours) % mod;
+    const new_positive_timestep = (new_timestep + mod) % mod
+    setTimestep(new_positive_timestep);
   };
-
+  
   // effect to animate the timestep
   useEffect(() => {
     if (animate) {
@@ -136,7 +142,7 @@ export default function App() {
       radiusUnits: 'meters',
       getPointRadius: f => {
         var voltage = loading ? 1 : +currentVoltages[f.properties.bus]
-        return 400 * Math.abs(voltage-1)
+        return 400 * Math.abs(voltage-1.01)
       },
       getFillColor: f => {
         var voltage = loading ? 1 : +currentVoltages[f.properties.bus]
@@ -475,7 +481,7 @@ export default function App() {
         </button>
         <button 
           style = {infoButtonStyle(5.8)}> 
-          {loading ? "Loading..." : times[timestep].time}
+          {loading ? "Loading..." : datetimes[timestep].time}
         </button>
         <img src="loading.gif" style={{position: 'absolute', left: '45%', top: '30%', width: 200, height: 200, opacity: 0.5, display: loading ? 'block' : 'none'}} />
         <Map reuseMaps mapLib={maplibregl} mapStyle={MAP_STYLE} preventStyleDiffing={true} />
