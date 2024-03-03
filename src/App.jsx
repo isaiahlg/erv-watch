@@ -4,7 +4,7 @@ import maplibregl from 'maplibre-gl';
 import DeckGL from '@deck.gl/react';
 import {GeoJsonLayer} from '@deck.gl/layers';
 import {H3HexagonLayer, S2Layer} from '@deck.gl/geo-layers';
-import {GridLayer} from '@deck.gl/aggregation-layers';
+import {GridLayer, HeatmapLayer} from '@deck.gl/aggregation-layers';
 import {interpolateRdBu, interpolateRdPu} from 'd3-scale-chromatic';
 import {csv} from 'd3-fetch';
 
@@ -13,6 +13,7 @@ import {csv} from 'd3-fetch';
 const DATA_URL = 'data/';
 const LINES_URL = DATA_URL + 'json/lines.geo.json';
 const BUSES_URL = DATA_URL + 'json/buses.geo.json';
+const BUSES_URL_2 = DATA_URL + 'json/buses.json';
 const H3_URL = DATA_URL + 'json/h3r10.json';
 const S2_URL = DATA_URL + 'json/s2r17.json';
 const VORONOI_URL = DATA_URL + 'json/voronoi.geo.json';
@@ -50,6 +51,7 @@ export default function App() {
   const [viewS2, toggleS2] = useState(false);
   const [viewVoronoi, toggleVoronoi] = useState(true);
   const [viewContours, toggleContours] = useState(false);
+  const [viewHeatmap, toggleHeatmap] = useState(false);
   const [viewCurrents, toggleCurrents] = useState(false);
   const [viewEVStations, toggleEVStations] = useState(false);
   const [viewPV, togglePV] = useState(false);
@@ -61,9 +63,9 @@ export default function App() {
   const [datetimes, setDatetimes] = useState([]);
   const [currentVoltages, setCurrentVoltages] = useState([]);
   
-  const [animate, setAnimate] = useState(false);
+  const [animate, setAnimate] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [speed, setSpeed] = useState(8);
+  const [speed, setSpeed] = useState(16);
 
   // effect to fetch all data at the start of the app
   useEffect(() => { 
@@ -96,7 +98,7 @@ export default function App() {
     const new_positive_timestep = (new_timestep + mod) % mod
     setTimestep(new_positive_timestep);
   };
-  
+
   // effect to animate the timestep
   useEffect(() => {
     if (animate) {
@@ -210,6 +212,42 @@ export default function App() {
     colorAggregation: 'MEAN',
     pickable: true,
     visible: viewContours
+  })
+
+  const heatmapLayer = new HeatmapLayer({
+    id: 'heatmap',
+    data: BUSES_URL_2,
+    radiusPixels: 100,
+    colorRange: [
+      [5,48,97],
+      [33,102,172],
+      [67,147,195],
+      [146,197,222],
+      [209,229,240],
+      [247,247,247],
+      [253,219,199],
+      [244,165,130],
+      [214,96,77],
+      [178,24,43],
+      [103,0,31]
+    ],
+    intensity: 1,
+    colorDomain: [0, 5],
+    weightsTextureSize: 256,
+    getPosition: d => {
+      var coord = d.geometry.coordinates;
+      return coord
+    },
+    getWeight: f => {
+      var voltage = loading ? 1 : +currentVoltages[f.properties.bus]
+      console.log(voltage)
+      return voltage
+    },
+    aggregation: 'SUM',
+    updateTriggers: {
+      getWeight: currentVoltages,
+    },
+    visible: viewHeatmap
   })
 
   const currentLayer = new GeoJsonLayer({
@@ -369,6 +407,7 @@ export default function App() {
   return (
       <DeckGL
         layers={[
+          heatmapLayer,
           contourLayer,
           voronoiLayer,
           s2Layer,
@@ -445,6 +484,11 @@ export default function App() {
           onClick = {() => toggleTX(!viewTX)}
           style = {layerButtonStyle(viewTX, 12)}> 
           Transformers
+        </button>
+        <button 
+          onClick = {() => toggleTX(!viewHeatmap)}
+          style = {layerButtonStyle(viewHeatmap, 13.4)}> 
+          Heatmap
         </button>
         <button 
           onClick = {() => stepTime(1)}
