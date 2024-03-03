@@ -9,8 +9,8 @@ import {interpolateRdBu, interpolateRdPu} from 'd3-scale-chromatic';
 import {csv} from 'd3-fetch';
 
 
-// const DATA_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/';
-const DATA_URL = 'data/';
+const DATA_URL = 'https://raw.githubusercontent.com/geohai/vite-vis-dss/main/data/';
+// const DATA_URL = 'data/';
 const LINES_URL = DATA_URL + 'json/lines.geo.json';
 const BUSES_URL = DATA_URL + 'json/buses.geo.json';
 const BUSES_URL_2 = DATA_URL + 'json/buses.json';
@@ -240,7 +240,7 @@ export default function App() {
     },
     getWeight: f => {
       var voltage = loading ? 1 : +currentVoltages[f.properties.bus]
-      console.log(voltage)
+      // console.log(voltage)
       return voltage
     },
     aggregation: 'SUM',
