@@ -1,38 +1,21 @@
-# Vis DSS with Vite, React, and Deck.gl
+# Environmental Rights Watch
 
-This is an app for visualizing OpenDSS data using Vite, React, and Deck.gl. It's based on the template for vite.js + React, and the GeoJsonLayer example from deck.gl. 
+This is an app for visualizing data related to environmental rights violations data using Vite, React, and Deck.gl. It's based on the template for vite.js + React, and the GeoJsonLayer example from deck.gl. 
 
-<!-- insert an image from public called screenshot.png -->
-![Screenshot](public/screenshot.png)
 
-## Deck.gl
-This is a minimal standalone version of the GeoJsonLayer (Polygons) example
-on [deck.gl](http://deck.gl) website.
-
-### Usage
-
-Copy the content of this folder to your project. 
+## Local Development Instructions
+Clone this repo. 
 
 ```bash
 # install dependencies
 npm install
-# or
-yarn
 # bundle and serve the app with vite
-npm start
+npm run dev
 ```
-
-### Data format
-
-Sample data is stored in [deck.gl Example Data](https://github.com/visgl/deck.gl-data/tree/master/examples/geojson), showing the property values of Vancouver. [Source](http://data.vancouver.ca/)
-
-To use your own data, check out
-the [documentation of GeoJsonLayer](../../../docs/api-reference/layers/geojson-layer.md).
 
 ### Basemap
 
 The basemap in this example is provided by [CARTO free basemap service](https://carto.com/basemaps). To use an alternative base map solution, visit [this guide](https://deck.gl/docs/get-started/using-with-map#using-other-basemap-services)
-
 
 ## Vite
 
